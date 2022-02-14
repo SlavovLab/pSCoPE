@@ -1,3 +1,4 @@
 # pSCoPE
 code associated with the pSCoPE manuscript
-<img src="https://plexDIA.slavovlab.net/mass-spec/Figures/plexDIA.png" width="70%">
+
+<img src="workflow_v6.png.png" width="70%">
