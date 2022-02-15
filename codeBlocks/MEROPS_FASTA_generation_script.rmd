@@ -1,0 +1,183 @@
+---
+title: "MEROPS_FASTA_generation_Script"
+author: "Gray Huffman"
+date: "2/15/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading required packages
+```{r}
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(seqinr)
+library(DT)
+```
+
+# data paths, import, and configuration
+```{r}
+#----------------
+# Data paths and import
+#----------------
+
+# MEROPS db and FASTA location
+#   script assumes MEROPS db and reference FASTA are in same directory
+refDir <- ("")
+Merops <- read.csv(paste0(refDir,"Merops_db.txt"), sep = ",", header = TRUE)
+
+#Reference FASTA
+# Example: "Mouse_ONLYsp.fasta
+FASTA_filename <- ""
+FASTA_in <- seqinr::read.fasta(paste0(refDir,FASTA_filename),seqtype = "AA",as.string = TRUE)
+
+#Output filename
+# Example: "test.fasta"
+outputString <- ""
+
+#----------------
+# Configuration
+#----------------
+# Organism String: use "Mus musculus" for mus musculus or "Homo sapiens" for Human 
+Organism_string <- "Mus musculus"  
+
+# FASTA selector: use "M" for mus musculus or "H" for human
+if(Organism_string == "Mus musculus"){
+FASTA_ind <- "M"
+}
+if(Organism_string == "Homo sapiens"){
+FASTA_ind <- "H"
+}
+
+
+```
+
+#
+```{r}
+# Remove annotated cleavages from MEROPS db that would be consistent with trypsin
+MEROPSdb_nonTryp <- Merops %>% dplyr::filter(grepl(Organism_string,organism) & (!(Site_P1 %in% c("Arg","Lys"))) & (is.finite(is.numeric(resnum))))
+  
+colsToExclude <- c("organism","CutDB","PRIDE","cleavageID","code","peptide_identification","peptidase_identification","Substrate_formula")
+
+colOrder <- c("Substrate_name","Uniprot","resnum","Protease","range","cleavage_type","mernum","Ref")
+
+MEROPSdb_nonTryp2 <- MEROPSdb_nonTryp %>% dplyr::select(colOrder)
+
+FASTA_in_mat <- t(as.data.frame(lapply(FASTA_in, attr, which="Annot")))
+FASTA_in_df <- as.data.frame(FASTA_in_mat)
+FASTA_in_df$header <- row.names(FASTA_in_df)
+row.names(FASTA_in_df) <- seq(1,nrow(FASTA_in_df), by = 1)
+colnames(FASTA_in_df) <- c("Annotation","Header")
+FASTA_in_df$Protein <- sub(".*\\|(.*)\\|.*", "\\1", FASTA_in_df$Annotation)
+
+# Adding columns for FASTA manipulation
+if(FASTA_ind == "M"){
+    FASTA_in_df$Description <- gsub('^.*MOUSE\\s*|\\s*OS.*$', '', FASTA_in_df$Annotation)
+}
+if(FASTA_ind == "H"){
+    FASTA_in_df$Description <- gsub('^.*HUMAN\\s*|\\s*OS.*$', '', FASTA_in_df$Annotation)
+}
+  
+FASTA_in_df$Intro <- sub(" .*", "", FASTA_in_df$Annotation)
+FASTA_in_df$Outro <- sub(".*OS=", "", FASTA_in_df$Annotation)
+FASTA_in_df$Outro <- paste0("OS=", FASTA_in_df$Outro)
+```
+
+# Cleaving proteins at MEROPS cleavage site and digesting each end consistent with tryptic cleavage rules
+```{r}
+MEROPSdb_nonTryp_selectedProt_lim <- MEROPSdb_nonTryp2
+
+FASTAmod_list <- list()
+output_FASTA_refdb <- FASTA_in_df[0,]
+
+
+for(i in 1:nrow(MEROPSdb_nonTryp_selectedProt_lim)){
+    
+  Protein <- MEROPSdb_nonTryp_selectedProt_lim$Uniprot[i]
+  resNum <- as.numeric(as.character(MEROPSdb_nonTryp_selectedProt_lim$resnum[i]))
+  Protease <- MEROPSdb_nonTryp_selectedProt_lim$Protease[i]
+    
+  FASTAind <- which(FASTA_in_df$Protein == Protein)
+    if(!identical(FASTAind,integer(0))){
+      FASTArow <- FASTA_in_df[FASTAind,]
+    
+      seqFull <- FASTA_in[[FASTAind]][1]
+    
+      #Cut Protein at residue and store both halves
+      half1 <- str_sub(seqFull, end = resNum)
+      half2 <- str_sub(seqFull, start = (as.numeric(resNum)+1))
+    
+      ##Half 1
+      #print(i)
+
+      vecH1 <- grep("[RK]", strsplit(half1, split="")[[1]])
+      stringLength_H1 <- nchar(half1)
+      diffVec_H1 <- stringLength_H1 - vecH1
+      indH1 <- which.min(diffVec_H1[diffVec_H1 > 5])
+      H1_cutIndex <- vecH1[indH1]
+      half1_frag <- str_sub(half1, start = H1_cutIndex + 1) 
+      #print(half1_frag)
+    
+      ##Half2
+      vecH2 <- grep("[RK]", strsplit(half2, split="")[[1]])
+      indH2 <- min(vecH2[vecH2 > 5])
+      
+      if(!is.finite(indH2)){
+        indH2 = nchar(half2)
+      }
+    
+      half2_frag <- str_sub(half2, end = indH2) 
+      #print(half2_frag)
+    
+      FASTArow1 <- FASTArow
+      FASTArow2 <- FASTArow
+    
+      FASTArow1$Description <- paste0(FASTArow1$Description," ENZYME ",Protease," RES ",resNum," "," Half1 ")
+      FASTArow2$Description <- paste0(FASTArow2$Description," ENZYME ",Protease," RES ",resNum," "," Half2 ")
+    
+      output_FASTA_refdb <- rbind(output_FASTA_refdb,FASTArow1,FASTArow2)
+      nrow_output <- nrow(output_FASTA_refdb)
+    
+      if(identical(half1,character(0))){
+        half1=""
+      }
+      if(identical(half2,character(0))){
+        half2=""
+      }
+    
+      if(identical(half1_frag,character(0))){
+        FASTAmod_list[(nrow_output-1)] <- half1
+      }else{
+        FASTAmod_list[(nrow_output-1)] <- half1_frag
+      }
+      if(identical(half2_frag,character(0))){
+        FASTAmod_list[(nrow_output)] <- half2
+      }else{
+        FASTAmod_list[(nrow_output)] <- half2_frag
+      }
+    }
+  }
+
+```
+
+# Writing FASTA containing cleaved peptides consistent with MEROPS db
+```{r}
+
+#Adding "DIG" string to FASTA entry to indicate a MEROPS cleavage product 
+output_FASTA_refdb$IntroEdit <- paste0(">sp|",output_FASTA_refdb$Protein,"_DIG_",row.names(output_FASTA_refdb))
+output_FASTA_refdb$IntroAdd <- str_sub(output_FASTA_refdb$Intro,start = nchar(paste0(">sp|",output_FASTA_refdb$Protein,"|")))
+
+output_FASTA_refdb$newFASTA_header <- paste0(output_FASTA_refdb$IntroEdit,output_FASTA_refdb$IntroAdd," ",output_FASTA_refdb$Description," ",output_FASTA_refdb$Outro)
+
+FASTAoutputList <- list()
+FASTAoutputList[[1]] <- FASTAmod_list
+FASTAoutputList[[2]] <- output_FASTA_refdb
+  
+seqinr::write.fasta(FASTAmod_list,output_FASTA_refdb$newFASTA_header,paste0(refDir,outputString),open="w",as.string = FALSE)
+  
+detach("package:seqinr")
+detach("package:DT")
+```
