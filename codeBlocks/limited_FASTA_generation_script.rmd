@@ -1,0 +1,45 @@
+---
+title: "Limited Fasta Generation"
+author: "Gray Huffman"
+date: "2/15/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#library(BiocManager)
+#BiocManager::install('Biostrings')
+#BiocManager::install('ShortRead')
+#library('Biostrings') 
+#ibrary('ShortRead')
+library(stringr)
+library(seqinr)
+
+OriginalFASTA_dir <- ""
+OriginalFASTA_name <- ""
+OriginalFASTA_path <- paste0(OriginalFASTA_dir,OriginalFASTA_name)
+FASTA <- seqinr::read.fasta(OriginalFASTA_path, seqtype = "AA", as.string = TRUE)
+
+InclusionList_path <- ""
+iList <- read.delim(InclusionList_path)
+
+output_dir <- ""
+newNameBase <- gsub(".fasta","",OriginalFASTA_name)
+output_path <- paste0(output_dir,newNameBase,"_lim.fasta")
+```
+
+```{r}
+
+FASTA_heading_Vec <- names(FASTA)
+FASTA_uniprot <- str_extract(FASTA_heading_Vec, "(?<=\\|)[^\\|]+")
+iList_Proteins <- iList$Leading.razor.protein
+FASTA_ind <- which(FASTA_uniprot %in% iList_Proteins)
+  
+FASTA_reduced <- FASTA[FASTA_ind]
+
+seqinr::write.fasta(FASTA_reduced, names = names(FASTA_reduced), file.out = output_path)
+
+```
