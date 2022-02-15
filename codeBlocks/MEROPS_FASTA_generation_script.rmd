@@ -1,7 +1,5 @@
 ---
 title: "MEROPS_FASTA_generation_Script"
-author: "Gray Huffman"
-date: "2/15/2022"
 output: html_document
 ---
 
