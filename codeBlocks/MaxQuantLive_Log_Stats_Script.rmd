@@ -1,0 +1,187 @@
+---
+title: "MaxQuantLive_log_processor"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages
+```{r}
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(stringr)
+```
+
+# Functions
+```{r}
+get_MS1_Entries <- function(log){
+  MS1 <- log %>% filter(grepl("PEPTIDE_FOUND_MS1",Message))
+  
+  MS1$id <- sub(".*id: *(.*?) *DetectedInMs1:.*", "\\1", MS1$Message)
+  MS1$DetectedInMs1 <- sub(".*DetectedInMs1: *(.*?) *DetectedInMs2:.*", "\\1", MS1$Message)
+  MS1$DetectedInMs2 <- sub(".*DetectedInMs2: *(.*?) *Disabled:.*", "\\1", MS1$Message)
+  MS1$Disabled <- sub(".*Disabled: *(.*?) *mz:.*", "\\1", MS1$Message)
+  MS1$mz <- as.numeric(sub(".*mz: *(.*?) *mz_deviation:.*", "\\1", MS1$Message))
+  MS1$mz_deviation <- as.numeric(sub(".*mz_deviation: *(.*?) *rt_expected:.*", "\\1", MS1$Message))
+  MS1$rt_expected <- as.numeric(sub(".*rt_expected: *(.*?) *rt_deviation:.*", "\\1", MS1$Message))
+  MS1$rt_deviation <- as.numeric(sub(".*rt_deviation: *(.*?) *intensity:.*", "\\1", MS1$Message))
+  MS1$intensity <- as.numeric(sub(".*intensity: *(.*?) *int_ratio:.*", "\\1", MS1$Message))
+  MS1$int_ratio <- as.numeric(sub(".*int_ratio: *(.*?) *int_max_ratio:.*", "\\1", MS1$Message))
+  MS1$int_max_ratio <- as.numeric(sub(".*int_max_ratio: *(.*?) *mod_seq:.*", "\\1", MS1$Message))
+  MS1$mod_seq <- (sub(".*mod_seq: *(.*?) *m:.*", "\\1", MS1$Message))
+  MS1$m <- as.numeric(sub(".*m: *(.*?) *z:.*", "\\1", MS1$Message))
+  MS1$z <- as.numeric(sub(".*z: *(.*?) *ApexMzDiff:.*", "\\1", MS1$Message))
+  MS1$ApexMzDiff <- as.numeric(sub(".*ApexMzDiff: *(.*?) *ApexRtDiff:.*", "\\1", MS1$Message))
+  MS1$ApexRtDiff <- as.numeric(sub(".*ApexRtDiff: *(.*?) *ApexRt:.*", "\\1", MS1$Message))
+  MS1$ApexRt <- as.numeric(sub(".*ApexRt: *(.*?) *ApexIntRatio:.*", "\\1", MS1$Message))
+  MS1$ApexIntRatio <- as.numeric(sub(".*ApexIntRatio: *(.*?) *mz_correction:.*", "\\1", MS1$Message))
+  MS1$mz_correction <- as.numeric(sub(".*mz_correction: *(.*?) *mz_tol:.*", "\\1", MS1$Message))
+  MS1$mz_tol <- as.numeric(sub(".*mz_tol: *(.*?) *rt_correction:.*", "\\1", MS1$Message))
+  MS1$rt_correction <- as.numeric(sub(".*rt_correction: *(.*?) *rt_tol:.*", "\\1", MS1$Message))
+  MS1$rt_window <- as.numeric(sub(".*rt_tol: *(.*?) *int_correction:.*", "\\1", MS1$Message))
+  MS1$int_correction <- as.numeric(sub(".*int_correction: *(.*?)", "\\1", MS1$Message))
+
+  return(MS1)
+  }
+
+# Get MS2
+get_MS2_Entries <- function(log){
+  MS2 <- log %>% filter(grepl("Found_fragment_ions",Message))
+  MS2$id <- gsub("Found_fragment_ions_in_scan 2","",MS2$Message)
+  MS2$id  <- as.numeric(str_remove(MS2$id, "^0+"))
+  return(MS2)
+}
+
+# Generating correction plots
+get_Correction_Entries <- function(log){
+  log_corrections <- log %>% filter(grepl("UPDATED_CORRECTION", Message)) %>% dplyr::select(Date, Time, Scan_protocol, RT, Message)
+  log_corrections$mz_correction <- as.numeric(sub(".*mz_correction: *(.*?) *mz_window:.*", "\\1", log_corrections$Message))
+  log_corrections$mz_window <- as.numeric(sub(".*mz_window: *(.*?) *rt_correction:.*", "\\1", log_corrections$Message))
+  log_corrections$rt_correction <- as.numeric(sub(".*rt_correction: *(.*?) *rt_window:.*", "\\1", log_corrections$Message))
+  log_corrections$rt_window <- as.numeric(sub(".*rt_window: *(.*?) *int_correction:.*", "\\1", log_corrections$Message))
+  log_corrections$int_correction <- as.numeric(sub(".*int_correction: *(.*?) *num_of_corr_peptides:.*", "\\1", log_corrections$Message))
+  log_corrections$num_of_corr_peptides <- as.numeric(sub(".*num_of_corr_peptides: *(.*?) *used_corr_peptides:.*", "\\1", log_corrections$Message))
+  log_corrections$used_corr_peptides <- as.numeric(sub(".*used_corr_peptides: *(.*?) *first_corr_peptide:.*", "\\1", log_corrections$Message))
+  log_corrections$first_corr_peptide <- as.numeric(sub(".*first_corr_peptide: *(.*?) *last_corr_peptide:.*", "\\1", log_corrections$Message))
+  log_corrections$last_corr_peptide <- as.numeric(sub(".*last_corr_peptide: *(.*?) *only_ms2_detected:.*", "\\1", log_corrections$Message))
+  log_corrections$only_ms2_detected <- (sub(".*only_ms2_detected: *(.*?)", "\\1", log_corrections$Message))
+  return(log_corrections)
+}
+```
+
+# Path configuration
+```{r}
+# Directory for figure output
+figOut <- ""
+
+# Inclusion list path
+inclusionList <- ""
+
+# Log file directory
+log_path <- ""
+
+inclusionList_instance <- read.delim(inclusionList)
+inclusionList_instance$id <- seq(0,nrow(inclusionList_instance)-1,1)
+```
+
+```{r}
+inclusionList_counts <- inclusionList_instance %>% dplyr::group_by(Priority) %>% summarize(TargCount = n())
+```
+
+
+# Demo code block for single MaxQuant.live log file
+```{r}
+# Specify single MaxQuant.Live log file
+# Ex: log_filt <- c("1005_20210811-1058.txt")
+log_filt <- ""
+
+log_instance_path <- paste0(log_path,log_filt[1])
+log_instance <- read.delim(log_instance_path, header = FALSE)
+
+colnames(log_instance) <-  c("Date","Time","Scan_protocol","RT","Message")
+
+MS1 <- get_MS1_Entries(log_instance)
+MS1_unique <- unique(MS1$id)
+MS2 <- get_MS2_Entries(log_instance)
+
+inclusionList_instance$seen <- ifelse(inclusionList_instance$id %in% MS1_unique,TRUE,FALSE)
+inclusionList_instance$MS2d <- ifelse(inclusionList_instance$id %in% MS2$id,TRUE,FALSE)
+
+inclusionList_sum_out <- inclusionList_instance %>% dplyr::group_by(Priority) %>% 
+    dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+inclusionList_sum_out$file_ind <- 1
+colnames(inclusionList_sum_out) <- c("Priority","seenSum","Detected at MS1","MS2Sum","Sent for MS2","file_ind")
+```
+
+# Demo code block for directory of log files
+```{r}
+
+logs <- list.files(log_path)
+# filtration step to remove desktop.ini file and any logs to exclude
+# Ex: log_filt <- logs[!(logs %in% c("desktop.ini","1016_20210927-1118.txt"))]
+log_filt <- logs[!(logs %in% c("desktop.ini"))]
+numLogs <- length(log_filt)
+
+log_Match_DF <- data.frame(log = character(), stringsAsFactors = FALSE)
+
+# Serially importing MaxQuant.Live logs and extracting MS1 and MS2 events
+for(i in 1:numLogs){
+  log_instance <- read.delim(paste0(log_path,log_filt[i]), header = FALSE)
+  colnames(log_instance) <-  c("Date","Time","Scan_protocol","RT","Message")
+
+  MS1 <- get_MS1_Entries(log_instance)
+  MS1_unique <- unique(MS1$id)
+  MS2 <- get_MS2_Entries(log_instance)
+  inclusionList_instance$seen <- ifelse(inclusionList_instance$id %in% MS1_unique,TRUE,FALSE)
+  inclusionList_instance$MS2d <- ifelse(inclusionList_instance$id %in% MS2$id,TRUE,FALSE)
+  inclusionList_sum <- inclusionList_instance %>% dplyr::group_by(Priority) %>% 
+    dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+  inclusionList_sum$file_ind <- i
+  if(i ==1){
+    inclusionList_sum_out <-inclusionList_sum
+  }
+  if(i > 1){
+    inclusionList_sum_out <- rbind(inclusionList_sum_out,inclusionList_sum)
+  }
+}
+
+colnames(inclusionList_sum_out) <- c("Priority","seenSum","Detected at MS1","MS2Sum","Sent for MS2","file_ind")
+
+```
+
+# Priority tier label dictionary
+```{r}
+# Define a label dictionary for figure readability
+Priority_dict <- data.frame(Priority = numeric(), Title = character(), stringsAsFactors = FALSE)
+Priority_dict[1:4,1] <- c(3,2,1,0)
+Priority_dict[1:4,2] <- c("High","Medium","Low","RT only")
+
+inclusionList_sum_out.j <- inclusionList_sum_out %>% left_join(Priority_dict, by = "Priority")
+inclusionList_sum_out.j.f <- inclusionList_sum_out.j %>% select(`Detected at MS1`,`Sent for MS2`,Priority,file_ind,Title)
+inclusionList_sum_out.j.f.m <- melt(inclusionList_sum_out.j.f, id.vars = c("file_ind","Priority","Title"))
+
+inclusionList_sum_out.j.f.m <- inclusionList_sum_out.j.f.m %>% left_join(inclusionList_counts, by = "Priority")
+```
+
+
+# Summary figure generation
+```{r}
+inclusionList_sum_out.j.f.m %>% ggplot(aes(value, color = variable)) + geom_boxplot(lwd = 1) + 
+  ggtitle("MaxQuant.Live Statistics") + 
+  coord_flip() + 
+  theme_light() + 
+  theme(axis.text.x =  element_blank(), 
+        strip.background = element_rect(color = "grey70", fill = "transparent"), 
+        strip.text = element_text(color= "black", size = 18),legend.position = "bottom",
+        axis.text.y = element_text(size =14),
+        axis.title.y = element_text(size =16),
+        plot.title = element_text(size = 18),
+        legend.text = element_text(size = 14)) + 
+  labs(color = "", x = "Fraction of Prioritized Peptides") + 
+  facet_wrap(~factor(Title,levels = c("High","Medium","Low","RT only")), nrow = 1)+
+  scale_color_manual(values = c("black","grey60")) + geom_text( x = .1, y = 0,color = "grey10",aes(label = paste0(TargCount,"\n Precursors")))
+ggsave(paste0(figOut,"example_MQliveStats.png"), width = 7, height = 5, units = "in")
+```
