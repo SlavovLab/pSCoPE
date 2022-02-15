@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Load required packages and specify read/write paths
 ```{r}
 #library(BiocManager)
 #BiocManager::install('Biostrings')
@@ -30,6 +31,8 @@ output_dir <- ""
 newNameBase <- gsub(".fasta","",OriginalFASTA_name)
 output_path <- paste0(output_dir,newNameBase,"_lim.fasta")
 ```
+
+# Remove un-priotitized proteins from FASTA file and write new FASTA
 
 ```{r}
 
