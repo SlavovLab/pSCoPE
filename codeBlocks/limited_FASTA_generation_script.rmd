@@ -1,7 +1,5 @@
 ---
 title: "Limited Fasta Generation"
-author: "Gray Huffman"
-date: "2/15/2022"
 output: html_document
 ---
 
