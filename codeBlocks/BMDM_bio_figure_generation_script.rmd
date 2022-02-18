@@ -1,7 +1,5 @@
 ---
 title: "BMDM_bio_figure_generation_script"
-author: "Gray Huffman"
-date: "2/15/2022"
 output: html_document
 ---
 
@@ -161,7 +159,7 @@ CorPermutation <- function(df,CodingDoc,dbString){
     CorSim_sumOut_Comp$DistBool <- CorSim_sumOut_Comp$CorDist.x > CorSim_sumOut_Comp$CorDist.y 
   
     CS_permTest <- CorSim_sumOut_Comp %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(fraction = sum(DistBool,na.rm = TRUE)/n())
-    CS_permTest$qVal <- p.adjust(CS_permTest$fraction)
+    CS_permTest$qVal <- p.adjust(CS_permTest$fraction, method = "fdr")
     CS_permTest$qVal2 <- ifelse(CS_permTest$qVal == 0,10^-5,CS_permTest$qVal)
     CS_permTest$lab <- dbString
     CS_permTest2 <- CS_permTest %>% left_join(corObs_sum, by = "MEROPS")
@@ -173,7 +171,7 @@ CorPermutation <- function(df,CodingDoc,dbString){
 ```{r data import and export paths}
 
 #orig datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/dat/"
-datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/Pub/codeBlocks/BMDM_bio_output_test/"
+datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/Pub/Data_Share/FigureGen/biofigs_BMDM/"
 
 #orig prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori40_DART.csv"),row.names = "X")
 prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori_mrri02_PIF50_DART_1pFDR.csv"),row.names = "X")
@@ -182,12 +180,12 @@ prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori_mrri02_PI
 #orig GeneMappings_single <- read.csv("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/BatchCorrection_examination/GeneMappings.csv")
 
 CG <- read.delim(paste0(datPath, "ChanKey_BMDM_Priori_mrri02_PIF50_DART_FDR1p.txt"))
-GeneMappings_single <- read.csv("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/BatchCorrection_examination/GeneMappings.csv")
+GeneMappings_single <- read.csv(paste0(datPath,"GeneMappings.csv"))
 
 #orig ProtMissing <- read.delim(paste0(datPath,"Prot_missing_BMDM.txt"))
 ProtMissing <- read.delim(paste0(datPath,"Prot_missing_BMDM_priori_mrri02_PIF50_DART_1pFDR.txt"))
 
-GO_DB_Path <- "G:/My Drive/MS/DBs_Params/GO/alt/GOA_db.txt"
+GO_DB_Path <- paste0(datPath,"GOA_db.txt")
 GO_db <- read.delim(GO_DB_Path, sep = "", header = TRUE)
 GO_db.2 <- GO_db %>% filter(Letter != "C")
 
@@ -201,11 +199,15 @@ SCoPE2_Human2Mouse <- read.delim(paste0(datPath,"SCoPE2_Markers_Dict.tab"))
 BulkDDARatioSet <- read.delim(paste0(datPath,"BulkRatioEvidence.txt"))
 
 # pre-digestion labeled bulk sample for MEROPS analysis
-DIA_Bulk <- read.delim("C:/My_Drive/MS/SCoPE/t-SCoPE/dat/MEROPS_bulk_120421/GHRT_eGH692_Report.xls")
+DIA_Bulk <- read.delim(paste0(datPath,"GHRT_eGH692_Report.xls"))
 
-figOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT/"
-datOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT/"
 
+#**********
+# Enter your preferred figure and data output paths
+#**********
+figOut <- "~/TEST_SCRIPT_OUT/"
+datOut <- "~/TEST_SCRIPT_OUT/"
+#**********
 
 ```
 
@@ -242,19 +244,26 @@ GeneMappings_single2 <- GeneMappings_single %>% select(-X)
 ```
 
 ```{r x_cond PSEA}
-# Run PC-weight-based PSEA
-xcond_PSEA <- PCA_PSEA(PCAout_both_weights,GeneMappings_single2,GO_db.2)
-LPS_PSEA <- PCA_PSEA(PCAout_LPS_weights,GeneMappings_single2,GO_db.2)
-NT_PSEA <- PCA_PSEA(PCAout_NT_weights,GeneMappings_single2,GO_db.2)
+#************
+# Uncomment if you would like to re-run the PC-weight-based PSEA instead of loading saved versions of the report
+#************
 
-#write.table(xcond2,paste0(datOut,"xCond2.txt"))
+# Run PC-weight-based PSEA
+#xcond_PSEA <- PCA_PSEA(PCAout_both_weights,GeneMappings_single2,GO_db.2)
+#LPS_PSEA <- PCA_PSEA(PCAout_LPS_weights,GeneMappings_single2,GO_db.2)
+#NT_PSEA <- PCA_PSEA(PCAout_NT_weights,GeneMappings_single2,GO_db.2)
+#************
+
+
+#Uncomment to save the results of the re-run analyses
+#write.table(xcond_PSEA,paste0(datOut,"xCond2.txt"))
 #write.table(LPS_PSEA,paste0(datOut,"LPS_only_PCAPSEA.txt"))
 #write.table(NT_PSEA,paste0(datOut,"NT_only_PCAPSEA.txt"))
 
 # Load PC-weight-based PSEA results
-xcond2 <- read.table(paste0(datOut,"xCond2.txt"))
-LPS_PSEA <- read.table(paste0(datOut,"LPS_only_PCAPSEA.txt"))
-NT_PSEA <- read.table(paste0(datOut,"NT_only_PCAPSEA.txt"))
+xcond2 <- read.table(paste0(datPath,"xCond2.txt"))
+LPS_PSEA <- read.table(paste0(datPath,"LPS_only_PCAPSEA.txt"))
+NT_PSEA <- read.table(paste0(datPath,"NT_only_PCAPSEA.txt"))
 ```
 
 
@@ -572,6 +581,7 @@ Dextran_DIA_LPS2$negLog_q_bin <- ifelse(Dextran_DIA_LPS2$negLog_q >= 30, 30,Dext
 Dextran_DIA_LPS2 %>% ggplot(aes(x = -median_prot_FC, y = negLog_q_bin, color = factor(Labs, levels = c("High uptake","Low uptake","Not significant")))) + geom_point(shape = 16,size = 5,alpha = 0.7) + theme_light() + labs(x = bquote("High / low uptake, log"[2]), y = bquote("-log"[10]~"(q val)"), color = "") + scale_color_manual(values = c("#009E73", "#CC79A7","#888888"))+ theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)), legend.text = element_text(size = 28), legend.title = element_blank(), legend.position="null",plot.margin = unit(c(1,0,0,0),"cm")) + geom_text_repel(aes(label = GeneLab2),size = 8, color = "black",min.segment.length = unit(0.33, "lines")) + coord_cartesian(xlim = c(-6.5,6.5), ylim = c(0,33))
 ggsave(paste0(figOut,"LPS_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
 ```
+
 ```{r Dextran Uptake Sorting histogram}
 library(tidyr)
 library(scales)
@@ -713,18 +723,22 @@ MarkerDB_SCoPE2.2 <- MarkerDB_SCoPE2.join %>% select(Entry, Type)
 # MEROPS peptides
 MEROPSvec <- c("P60710_DIG_10362102",	"Q9CZU6_DIG_55521","P60710_DIG_1036223","P60710_DIG_1036222")
 
-# Perform correlation analysis
+#************
+# Uncomment these lines to perform correlation analysis
+#************
 # Condition-specific db
-Ratio_markOut <- CorPermutation(BC_unImp_CxP,MarkerDB_DDA.f,"Internal")
+#Ratio_markOut <- CorPermutation(BC_unImp_CxP,MarkerDB_DDA.f,"Internal")
 # External db
-SCoPE2_markOut <- CorPermutation(BC_unImp_CxP,MarkerDB_SCoPE2.2,"SCoPE2")
+#SCoPE2_markOut <- CorPermutation(BC_unImp_CxP,MarkerDB_SCoPE2.2,"SCoPE2")
+#************
 
+#Uncomment these lines to store your results
 #write.table(Ratio_markOut,paste0(figOut,"Ratio_markOut.txt"))
 #write.table(SCoPE2_markOut,paste0(figOut,"SCoPE2_markOut.txt"))
 
 #Read in previously generated correlation results
-#Ratio_markOut <- read.table(paste0(figOut,"Ratio_markOut.txt"))
-#SCoPE2_markOut <- read.table(paste0(figOut,"SCoPE2_markOut.txt"))
+Ratio_markOut <- read.table(paste0(datPath,"Ratio_markOut.txt"))
+SCoPE2_markOut <- read.table(paste0(datPath,"SCoPE2_markOut.txt"))
 
 
 # combining correlation analysis results
@@ -832,6 +846,7 @@ BottomFacet <- Bulk_and_SC2 %>% filter(!(Desc3 %in% c("Actin: L104\ncathepsin D"
 Top2 / BottomFacet + plot_layout(guides = "collect",heights = c(3,1.5)) & theme(legend.position = "bottom",plot.margin =  margin(0, 0, 0, 0, "cm")) 
 ggsave(paste0(figOut,"BulkAndSC_Val_v3_2part_v4.pdf"), width = 4, height = 5.25)
 ```
+
 ```{r fig4c: PCA color-coded by MEROPS peptide abundances}
 
 #PC_both <- prcomp(t(BC_imp_PxC))
