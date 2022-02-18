@@ -1,0 +1,876 @@
+---
+title: "PDAC_technical_figure_generation_script"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(stringr)
+library(patchwork)
+```
+
+```{r functions}
+Empirical_FDR_PEP <- function(ev){
+  exps <- levels(factor(ev$Raw.file))
+  ev$Score_naOmit <- ifelse(is.na(ev$PEP),100,ev$PEP)
+  for(i in 1:length(exps)){
+    
+    ev_single <- ev %>% filter(Raw.file == levels(factor(ev$Raw.file))[i])
+    ev_rank <- ev_single %>% arrange(Score_naOmit) 
+    ev_rank$Ind <- seq(1:nrow(ev_rank)) 
+    ev_rank$revCount <- ifelse(ev_rank$Reverse=="+",1,0)
+    ev_rank <- ev_rank %>% mutate(RevHits = cumsum(revCount),qVal = RevHits/Ind)
+                       
+    if(i== 1){
+      ev_rank_out <- ev_rank
+    }
+    if(i > 1){
+      ev_rank_out <- rbind(ev_rank_out,ev_rank)
+    }
+  }
+  return(ev_rank_out)
+}
+
+Empirical_FP_FDR_PEP <- function(ev){
+  exps <- levels(factor(ev$Raw.file))
+  ev$Score_naOmit <- ifelse(is.na(ev$PEP),100,ev$PEP)
+  for(i in 1:length(exps)){
+    
+    ev_single <- ev %>% filter(Raw.file == levels(factor(ev$Raw.file))[i])
+    ev_rank <- ev_single %>% arrange(Score_naOmit) 
+    ev_rank$Ind <- seq(1:nrow(ev_rank)) 
+    ev_rank$revCount <- ifelse(ev_rank$Reverse=="+",1,0)
+    ev_rank <- ev_rank %>% mutate(RevHits = cumsum(revCount),qVal = RevHits/Ind)
+                       
+    if(i== 1){
+      ev_rank_out <- ev_rank
+    }
+    if(i > 1){
+      ev_rank_out <- rbind(ev_rank_out,ev_rank)
+    }
+  }
+  return(ev_rank_out)
+}
+
+
+
+Empirical_FDR_msms <- function(ev){
+  exps <- levels(factor(ev$Raw.file))
+  ev <- ev %>% dplyr::filter(Length != 0)
+  ev$Score_naOmit <- ifelse(is.na(ev$PEP),1,ev$PEP)
+  for(i in 1:length(exps)){
+    
+    ev_single <- ev %>% filter(Raw.file == levels(factor(ev$Raw.file))[i])
+    ev_rank <- ev_single %>% arrange(Score_naOmit) 
+    ev_rank$Ind <- seq(1:nrow(ev_rank)) 
+    ev_rank$revCount <- ifelse(ev_rank$Reverse=="+",1,0)
+    ev_rank <- ev_rank %>% mutate(RevHits = cumsum(revCount),qVal = RevHits/Ind)
+                       
+    if(i== 1){
+      ev_rank_out <- ev_rank
+    }
+    if(i > 1){
+      ev_rank_out <- rbind(ev_rank_out,ev_rank)
+    }
+  }
+  return(ev_rank_out)
+}
+
+#########
+# MQ.live log parsing functions
+#########
+
+getMS1 <- function(log){
+  MS1 <- log %>% filter(grepl("PEPTIDE_FOUND_MS1",Message))
+  
+  MS1$id <- sub(".*id: *(.*?) *DetectedInMs1:.*", "\\1", MS1$Message)
+  MS1$DetectedInMs1 <- sub(".*DetectedInMs1: *(.*?) *DetectedInMs2:.*", "\\1", MS1$Message)
+  MS1$DetectedInMs2 <- sub(".*DetectedInMs2: *(.*?) *Disabled:.*", "\\1", MS1$Message)
+  MS1$Disabled <- sub(".*Disabled: *(.*?) *mz:.*", "\\1", MS1$Message)
+  MS1$mz <- as.numeric(sub(".*mz: *(.*?) *mz_deviation:.*", "\\1", MS1$Message))
+  MS1$mz_deviation <- as.numeric(sub(".*mz_deviation: *(.*?) *rt_expected:.*", "\\1", MS1$Message))
+  MS1$rt_expected <- as.numeric(sub(".*rt_expected: *(.*?) *rt_deviation:.*", "\\1", MS1$Message))
+  MS1$rt_deviation <- as.numeric(sub(".*rt_deviation: *(.*?) *intensity:.*", "\\1", MS1$Message))
+  MS1$intensity <- as.numeric(sub(".*intensity: *(.*?) *int_ratio:.*", "\\1", MS1$Message))
+  MS1$int_ratio <- as.numeric(sub(".*int_ratio: *(.*?) *int_max_ratio:.*", "\\1", MS1$Message))
+  MS1$int_max_ratio <- as.numeric(sub(".*int_max_ratio: *(.*?) *mod_seq:.*", "\\1", MS1$Message))
+  MS1$mod_seq <- (sub(".*mod_seq: *(.*?) *m:.*", "\\1", MS1$Message))
+  MS1$m <- as.numeric(sub(".*m: *(.*?) *z:.*", "\\1", MS1$Message))
+  MS1$z <- as.numeric(sub(".*z: *(.*?) *ApexMzDiff:.*", "\\1", MS1$Message))
+  MS1$ApexMzDiff <- as.numeric(sub(".*ApexMzDiff: *(.*?) *ApexRtDiff:.*", "\\1", MS1$Message))
+  MS1$ApexRtDiff <- as.numeric(sub(".*ApexRtDiff: *(.*?) *ApexRt:.*", "\\1", MS1$Message))
+  MS1$ApexRt <- as.numeric(sub(".*ApexRt: *(.*?) *ApexIntRatio:.*", "\\1", MS1$Message))
+  MS1$ApexIntRatio <- as.numeric(sub(".*ApexIntRatio: *(.*?) *mz_correction:.*", "\\1", MS1$Message))
+  MS1$mz_correction <- as.numeric(sub(".*mz_correction: *(.*?) *mz_tol:.*", "\\1", MS1$Message))
+  MS1$mz_tol <- as.numeric(sub(".*mz_tol: *(.*?) *rt_correction:.*", "\\1", MS1$Message))
+  MS1$rt_correction <- as.numeric(sub(".*rt_correction: *(.*?) *rt_tol:.*", "\\1", MS1$Message))
+  MS1$rt_window <- as.numeric(sub(".*rt_tol: *(.*?) *int_correction:.*", "\\1", MS1$Message))
+  MS1$int_correction <- as.numeric(sub(".*int_correction: *(.*?)", "\\1", MS1$Message))
+
+  return(MS1)
+  }
+
+# Get MS2
+getMS2 <- function(log){
+  MS2 <- log %>% filter(grepl("Found_fragment_ions",Message))
+  MS2$id <- gsub("Found_fragment_ions_in_scan 2","",MS2$Message)
+  MS2$id  <- as.numeric(str_remove(MS2$id, "^0+"))
+  return(MS2)
+}
+
+# Generating correction plots
+getCorrection <- function(log){
+  log_corrections <- log %>% filter(grepl("UPDATED_CORRECTION", Message)) %>% dplyr::select(Date, Time, Scan_protocol, RT, Message)
+  log_corrections$mz_correction <- as.numeric(sub(".*mz_correction: *(.*?) *mz_window:.*", "\\1", log_corrections$Message))
+  log_corrections$mz_window <- as.numeric(sub(".*mz_window: *(.*?) *rt_correction:.*", "\\1", log_corrections$Message))
+  log_corrections$rt_correction <- as.numeric(sub(".*rt_correction: *(.*?) *rt_window:.*", "\\1", log_corrections$Message))
+  log_corrections$rt_window <- as.numeric(sub(".*rt_window: *(.*?) *int_correction:.*", "\\1", log_corrections$Message))
+  log_corrections$int_correction <- as.numeric(sub(".*int_correction: *(.*?) *num_of_corr_peptides:.*", "\\1", log_corrections$Message))
+  log_corrections$num_of_corr_peptides <- as.numeric(sub(".*num_of_corr_peptides: *(.*?) *used_corr_peptides:.*", "\\1", log_corrections$Message))
+  log_corrections$used_corr_peptides <- as.numeric(sub(".*used_corr_peptides: *(.*?) *first_corr_peptide:.*", "\\1", log_corrections$Message))
+  log_corrections$first_corr_peptide <- as.numeric(sub(".*first_corr_peptide: *(.*?) *last_corr_peptide:.*", "\\1", log_corrections$Message))
+  log_corrections$last_corr_peptide <- as.numeric(sub(".*last_corr_peptide: *(.*?) *only_ms2_detected:.*", "\\1", log_corrections$Message))
+  log_corrections$only_ms2_detected <- (sub(".*only_ms2_detected: *(.*?)", "\\1", log_corrections$Message))
+  return(log_corrections)
+}
+
+
+```
+
+```{r}
+theme_box <- function() { 
+    theme_light() %+replace% 
+        theme(
+          axis.text.x = element_blank(), 
+          axis.text.y = element_text(size = 20), 
+          axis.title.y = element_text(size = 22, angle = 90), 
+          plot.title = element_text(size =24, vjust = 2),
+          legend.position = "null", 
+          legend.text = element_text(size = 18),
+          strip.text = element_text(size = 18, face= "bold", color = "black",margin = margin(0.1,0,0.1,0, "cm")),
+          strip.background = element_rect( fill = "grey95", color = "grey70")
+        )
+}
+
+theme_box_MSMS <- function() { 
+    theme_light() %+replace% 
+        theme(
+          axis.text = element_text(size = 20),
+          axis.title.y = element_text(size = 22, angle = 90),
+          axis.title.x = element_blank(),
+          plot.title = element_text(size =24, vjust = 2),
+          legend.position = "null", 
+          legend.text = element_text(size = 18),
+          strip.text = element_text(size = 18, face= "bold", color = "black",margin = margin(0.1,0,0.1,0, "cm")),
+          strip.background = element_rect( fill = "grey95", color = "grey70")
+        )
+}
+
+theme_heatmap <- function() { 
+    theme_light() %+replace% 
+        theme(
+          axis.text = element_blank(), 
+          axis.title = element_text(size = 22), 
+          legend.position = "null",
+          strip.text = element_text(size = 18, face= "bold", color = "black",margin = margin(0.1,0,0.1,0, "cm")), 
+          strip.background = element_rect( fill = "grey95", color = "grey70")
+        )
+}
+
+theme_missingData_tickChart <- function() {
+  theme_light() %+replace% 
+    theme(
+      axis.text.y = element_blank(), 
+      legend.position = "null",
+      axis.title = element_text(size = 22), 
+      axis.text.x = element_text(size = 20), 
+      strip.text = element_text(color ="black", face = "bold",size = 18,margin = margin(0.1,0,0.1,0, "cm")), 
+      strip.background = element_rect(fill = "grey95", color = "grey70"),
+      plot.title = element_text(size = 24,hjust = 0.5, vjust = 2)
+    )
+}
+
+```
+
+```{r Tier data}
+#Path to downloaded directory 
+DataPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/Pub/Data_Share/FigureGen/"
+
+ShotgunSet <- c("wAL00295","wAL00296","wAL00297","wAL00298","wAL00299","wAL00300")
+
+FigOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT_PDAC2/"
+datOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT_PDAC2/"
+
+# Missing data at single-cell level
+
+PDAC_t0_both <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/t0_PDAC_consist_PIF50_mrri10.txt"))
+
+PDAC_MP_both <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Prot_missing_PDAC_consist_PIF50_mrri10.txt"))
+
+PDAC_CG_both <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/ChanKey_PDAC_consist_PIF50_mrri10.txt"))
+
+AllExps <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/ev_PDAC_consist_filtered_PIF50_mrri10_1pFDR.txt"))
+
+AllExps$SeqCharge <- paste0(AllExps$Modified.sequence,AllExps$Charge)
+AllExps$Raw.file <- str_sub(AllExps$Raw.file, start = 2)
+
+# Full Evidence files for each experiment
+evi.tier.s <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Consistency_evidence_Shotgun.txt"))
+evi.tier.p <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Consistency_evidence_pSCoPE.txt"))
+
+
+evi.tier <- rbind(evi.tier.s,evi.tier.p)
+evi.tier.pep.prot <- evi.tier %>% dplyr::select(Modified.sequence,Leading.razor.protein) %>% group_by(Modified.sequence) %>% slice(1)
+  
+RefList <- read.csv(paste0(DataPath,"technicalfigs_PDAC/Consistency/TierAssignmentOfDDAPeps_PDAC_110521.csv"))
+
+RefList_Top <- RefList %>% dplyr::filter(Tier == 3) %>% dplyr::select(SeqCharge)
+RefList_Mid <- RefList %>% dplyr::filter(Tier == 2) %>% dplyr::select(SeqCharge)
+RefList_Both <- RefList %>% dplyr::filter(Tier %in% c(2,3)) %>% dplyr::select(SeqCharge)
+RefList_all <- RefList %>% dplyr::filter(TargBool = TRUE) %>% dplyr::select(SeqCharge)
+
+TargList <- read.delim(paste0(DataPath,"tLists/PDAC_1x_Uniform_1105_3.txt"))
+
+# Fix Spectronaut formatting in inclusion list
+TargList$SeqCharge <- gsub("\\[Oxidation \\(M\\)\\]","\\(Oxidation \\(M\\)\\)",TargList$SeqCharge)
+TargList$SeqCharge <- gsub("\\[Acetyl \\(Protein N-term\\)\\]","\\(Acetyl \\(Protein N-term\\)\\)",TargList$SeqCharge)
+
+TargList_Top <- TargList %>% dplyr::filter(Priority %in% c(3)) %>% dplyr::select(SeqCharge)
+TargList_Mid <- TargList %>% dplyr::filter(Priority %in% c(2)) %>% dplyr::select(SeqCharge)
+TargList_Both <- TargList %>% dplyr::filter(Priority %in% c(2,3)) %>% dplyr::select(SeqCharge)
+TargList_All <- TargList %>% dplyr::filter(TargBool = TRUE) %>% select(SeqCharge)
+
+TargList_Both$pep <- str_sub(TargList_Both$SeqCharge, end = -2)
+TargList_Both.pep <- as.data.frame(unique(TargList_Both$pep))
+colnames(TargList_Both.pep) <- "Modified.sequence"
+
+TargList_All$pep <- str_sub(TargList_All$SeqCharge, end = -2)
+TargList_All.pep <- as.data.frame(unique(TargList_All$pep))
+colnames(TargList_All.pep) <- "Modified.sequence"
+```
+
+#-----
+# Consistency Figures
+#-----
+
+```{r matrix}
+
+PDAC_CG_both.f <- PDAC_CG_both %>% dplyr::filter(celltype == "sc", cvm < .4)
+PDAC_CG_both.f$Raw.file <- str_sub(PDAC_CG_both.f$Raw.file, start = 2)
+PDAC_CG_s.f <- PDAC_CG_both.f %>% dplyr::filter(Raw.file %in% ShotgunSet)
+PDAC_CG_p.f <- PDAC_CG_both.f %>% dplyr::filter(!(Raw.file %in% ShotgunSet))
+
+PDAC_Consistency_cellOrder <- PDAC_CG_both.f$id
+PDAC_Consistency_cellOrder.p <- PDAC_CG_p.f$id
+
+PDAC_t0_both.m <- melt(PDAC_t0_both)
+PDAC_t0_both.m.f <- PDAC_t0_both.m %>% dplyr::filter(variable %in% PDAC_CG_both.f$id, SeqCharge %in% TargList_Both$SeqCharge)
+PDAC_t0_both.m.f$pep <- str_sub(PDAC_t0_both.m.f$SeqCharge, end = -2) 
+PDAC_t0_both.m.f.pep <- PDAC_t0_both.m.f %>% dplyr::group_by(variable,pep) %>% dplyr::summarize(ValCollected = sum(value,na.rm = TRUE))
+PDAC_t0_both.m.f.pep$ValCollected_na <- ifelse(PDAC_t0_both.m.f.pep$ValCollected == 0, NA,PDAC_t0_both.m.f.pep$ValCollected)
+PDAC_t0_both.m.f.pep$Method <- ifelse(PDAC_t0_both.m.f.pep$variable %in% PDAC_CG_s.f$id, "Shotgun","Prioritized")
+
+
+TargList_Both.pep_in <- as.data.frame(TargList_Both.pep)
+colnames(TargList_Both.pep_in) <- "pep"
+
+for(i in 1:length(unique(PDAC_t0_both.m.f.pep$variable))){
+  SingleCell <- PDAC_t0_both.m.f.pep %>% ungroup() %>% dplyr::filter(variable == unique(PDAC_t0_both.m.f.pep$variable)[i], pep %in% TargList_Both.pep$Modified.sequence) %>% dplyr::select(pep,ValCollected_na)
+  colnames(SingleCell) <- c("pep",as.character(unique(PDAC_t0_both.m.f.pep$variable)[[i]]))
+  #SingleExp_2 <- SingleExp %>% group_by(SeqCharge) %>% slice(1)
+  TargList_Both.pep_in <- TargList_Both.pep_in %>% left_join(SingleCell, by = "pep")
+}
+
+TargList_Both.pep_in.m <- melt(TargList_Both.pep_in)
+TargList_Both.pep_in.m$Valbin <- ifelse(is.na(TargList_Both.pep_in.m$value), 0, 1)
+
+TargList_Both.m.pep_sums <- TargList_Both.pep_in.m %>% group_by(pep) %>% summarize(numCells = sum(Valbin, na.rm = TRUE)) %>% arrange(-numCells) %>% filter(numCells != 0)
+
+
+TargList_Both.pep_in.m$Method <- ifelse(TargList_Both.pep_in.m$variable %in% PDAC_CG_s.f$id,"Shotgun","Prioritized") 
+
+
+RefList_Both.m3 <- TargList_Both.pep_in.m %>% left_join(TargList_Both.m.pep_sums, by = "pep")
+RefList_Both.m3 <- RefList_Both.m3 %>% filter(!is.na(numCells))
+Both_Tier_fig <- RefList_Both.m3 %>% ggplot(aes(x = factor(variable, levels = PDAC_Consistency_cellOrder), y = reorder(pep,-numCells), fill = factor(Valbin))) + geom_tile()  + facet_wrap(~factor(Method,levels = c("Shotgun","Prioritized"))) + theme(axis.text.y = element_blank(), axis.text.x = element_blank(),legend.position = "null", strip.text = element_text(size = 16),axis.text = element_text(size = 14), axis.title = element_text(size = 16), title = element_text(size =12)) + scale_fill_manual(values = c("white","red")) + labs(x = "Cells", y = "Peptides")
+
+
+####
+
+ConsistencyShotgunCellOrder <- c("i5","i6","i7","i8","i9","i10","i11","i12","i13","i14","i15","i21","i22","i23","i24","i25","i26","i27","i28","i29","i30","i37","i38","i39","i40","i41","i42","i43","i45","i46","i48","i53","i54","i55","i56","i57","i58","i60","i61","i63","i64","i69","i70","i71","i72","i73","i74","i75","i76","i78","i79","i80","i85","i86","i87","i88","i89","i90","i91","i93","i94","i95","i96")
+#integrating new data
+ConsistencyPrioritizedCellOrder <- PDAC_Consistency_cellOrder.p
+
+CellOrder <- c(ConsistencyShotgunCellOrder,ConsistencyPrioritizedCellOrder)
+CellOrder.df <- as.data.frame(CellOrder)
+indVec <- c(c(1:63),c(1:62))
+#indVec <- ConsistencyShotgunCellOrder
+CellOrder.df$Inds <- indVec
+
+
+RefList_Both.m3$ValBin2 <- ifelse((RefList_Both.m3$Method == "Shotgun" & RefList_Both.m3$Valbin == 1),2,RefList_Both.m3$Valbin)
+RefList_Both.m4 <- RefList_Both.m3 %>% left_join(CellOrder.df, by = c("variable"="CellOrder"))
+
+cellHeatMap2 <- RefList_Both.m4 %>% ggplot(aes(x = Inds, y = reorder(pep,-numCells), fill = factor(ValBin2))) + geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf), fill="white")+ geom_tile() + facet_wrap(~factor(Method,levels = c("Shotgun","Prioritized")), scales = "free_x")  + theme_missingData_tickChart() + theme(plot.title = element_text(vjust = 2), axis.title.y = element_text(margin = margin(t = 0, r = 30, b = 0, l = 0))) + scale_fill_manual(values = c("white","red","blue")) + labs(x = "Single Cells", y = "Peptides") + scale_x_continuous(breaks = seq(10, 63, by = 10)) + ggtitle("Top Tiers")
+cellHeatMap2
+ggsave(paste0(FigOut,"TierHeatMap_PDAC_patchwork_fig_v4_noBlank.png"), width = 7.2 , height = 5.1, units = "in")
+
+
+```
+
+```{r Peptide-level missingness}
+
+PDAC_CG_both$Raw.file <- str_sub(PDAC_CG_both$Raw.file, start = 2)
+PDAC_CG_s <- PDAC_CG_both %>% filter(Raw.file %in% ShotgunSet, cvm < .4, celltype == "sc")
+PDAC_CG_p <- PDAC_CG_both %>% filter(!(Raw.file %in% ShotgunSet), cvm < .4, celltype == "sc")
+
+#TargList_Both
+#TargList_All
+
+PDAC_t0_both.m <- melt(PDAC_t0_both)
+PDAC_t0_both.m$pep <- str_sub(PDAC_t0_both.m$SeqCharge, end = -2)
+
+PDAC_t0_both.m_Top <- PDAC_t0_both.m %>% dplyr::filter(SeqCharge %in% TargList_Both$SeqCharge)
+PDAC_t0_both.m_All <- PDAC_t0_both.m %>% dplyr::filter(SeqCharge %in% TargList_All$SeqCharge)
+
+PDAC_t0_both.m_Top_sum <- PDAC_t0_both.m_Top %>% dplyr::group_by(variable,pep) %>% dplyr::summarize(valSum = sum(value, na.rm = TRUE))
+PDAC_t0_both.m_All_sum <- PDAC_t0_both.m_All %>% dplyr::group_by(variable,pep) %>% dplyr::summarize(valSum = sum(value, na.rm = TRUE))
+PDAC_t0_both.m_Top_sum$valSumNa <- ifelse(PDAC_t0_both.m_Top_sum$valSum == 0, NA, PDAC_t0_both.m_Top_sum$valSum)
+PDAC_t0_both.m_All_sum$valSumNa <- ifelse(PDAC_t0_both.m_All_sum$valSum == 0, NA, PDAC_t0_both.m_All_sum$valSum)
+
+PDAC_t0_both.m_Top_sum_MD <- PDAC_t0_both.m_Top_sum %>% group_by(variable) %>% summarize(FractionMD = sum(is.na(valSumNa))/n())
+PDAC_t0_both.m_All_sum_MD <- PDAC_t0_both.m_All_sum %>% group_by(variable) %>% summarize(FractionMD = sum(is.na(valSumNa))/n())
+
+PDAC_t0_both.m_Top_sum_MD$Method <- ifelse(PDAC_t0_both.m_Top_sum_MD$variable %in% PDAC_CG_s.f$id,"Shotgun",ifelse(PDAC_t0_both.m_Top_sum_MD$variable %in% PDAC_CG_p.f$id,"Prioritized","Omit"))
+PDAC_t0_both.m_All_sum_MD$Method <- ifelse(PDAC_t0_both.m_All_sum_MD$variable %in% PDAC_CG_s.f$id,"Shotgun",ifelse(PDAC_t0_both.m_All_sum_MD$variable %in% PDAC_CG_p.f$id,"Prioritized","Omit"))
+
+PDAC_t0_both.m_Top_sum_MD$Tier <- "Top Tiers"
+PDAC_t0_both.m_All_sum_MD$Tier <- "All Tiers"
+
+PDAC_t0_both.m_join <- rbind(PDAC_t0_both.m_Top_sum_MD,PDAC_t0_both.m_All_sum_MD)
+PDAC_t0_both.m_join$percent <- PDAC_t0_both.m_join$FractionMD*100
+
+PDAC_t0_both.m_join$percentComplete <- 100 - PDAC_t0_both.m_join$percent
+  
+PeptideMD <- PDAC_t0_both.m_join %>% ggplot(aes(percentComplete, color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha = 0.5,lwd=1) + coord_flip(xlim = c(0,75)) + labs(color = "", x = "") + facet_wrap(~factor(Tier, levels = c("Top Tiers","All Tiers"))) + theme_box() + theme(plot.title = element_text(size = 24,hjust = 0.5, vjust = 2) , axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)), strip.text = element_text(size = 20),panel.grid.minor.x = element_blank(),panel.grid.major.x = element_blank(),plot.margin = unit(c(0,0,0,0), "cm"),axis.text = element_text(color = "grey10",hjust = 1))  + scale_color_manual(values = c("blue","red")) + labs(x="% Data Completeness",y = "")  + ggtitle("Peptides") + scale_x_continuous(limits = c(0, 75), breaks = seq(0, 75, by = 15)) + geom_hline(aes(yintercept = 0), color = "grey90")
+
+Fig1d_PeptideConsistency_stats <- PDAC_t0_both.m_join %>% group_by(Method,Tier) %>% summarize(medianVal = median(percent,na.rm = TRUE), medianComplete = median(percentComplete, na.rm = TRUE))
+
+
+PeptideMD  + plot_annotation(title = 'Single-Cell Peptide Detection Consistency',theme = theme(plot.title = element_text(size = 18)))
+ggsave(paste0(FigOut,"PepMD_consistency_PDAC_fig_v4_completeness.pdf"), width = 5 , height = 5, units = "in")
+```
+
+``` {r }
+PDAC_CG_s <- PDAC_CG_both %>% filter(Raw.file %in% ShotgunSet, cvm < .4, celltype == "sc")
+PDAC_CG_p <- PDAC_CG_both %>% filter(!(Raw.file %in% ShotgunSet), cvm < .4, celltype == "sc")
+
+TargList_Both.pepProt <- TargList_Both.pep %>% left_join(evi.tier.pep.prot, by = "Modified.sequence")
+TargList_All.pepProt <- TargList_All.pep %>% left_join(evi.tier.pep.prot, by = "Modified.sequence")
+
+#Left join dataframe of single cells to this with Prot-level info
+PDAC_MP_both.m <- melt(PDAC_MP_both)
+PDAC_MP_both.m$Method <- ifelse(PDAC_MP_both.m$variable %in% PDAC_CG_s$id, "Shotgun","Prioritization")
+
+PDAC_MP_both.m_Top <- PDAC_MP_both.m %>% dplyr::filter(Proteins %in% TargList_Both.pepProt$Leading.razor.protein)
+PDAC_MP_both.m_All <- PDAC_MP_both.m %>% dplyr::filter(Proteins %in% TargList_All.pepProt$Leading.razor.protein)
+
+PDAC_MP_both.m_Top_sum <- PDAC_MP_both.m_Top %>% group_by(variable,Proteins) %>% summarize(ProtQuant = sum(value, na.rm = TRUE))
+PDAC_MP_both.m_Top_sum$ProtQuantna <- ifelse(PDAC_MP_both.m_Top_sum$ProtQuant==0,NA,PDAC_MP_both.m_Top_sum$ProtQuant)
+
+PDAC_MP_both.m_All_sum <- PDAC_MP_both.m_All %>% group_by(variable,Proteins) %>% summarize(ProtQuant = sum(value, na.rm = TRUE))
+PDAC_MP_both.m_All_sum$ProtQuantna <- ifelse(PDAC_MP_both.m_All_sum$ProtQuant==0,NA,PDAC_MP_both.m_All_sum$ProtQuant)
+
+
+PDAC_MP_both.m_Top_sum_missing <- PDAC_MP_both.m_Top_sum %>% dplyr::group_by(variable) %>% dplyr::summarize(fracMissing = sum(is.na(ProtQuantna))/n())
+PDAC_MP_both.m_Top_sum_missing$Method <- ifelse(PDAC_MP_both.m_Top_sum_missing$variable %in% PDAC_CG_s$id, "Shotgun","Prioritized")
+PDAC_MP_both.m_Top_sum_missing$Tiers <- "Top Tiers"
+
+PDAC_MP_both.m_All_sum_missing <- PDAC_MP_both.m_All_sum %>% dplyr::group_by(variable) %>% dplyr::summarize(fracMissing = sum(is.na(ProtQuantna))/n())
+PDAC_MP_both.m_All_sum_missing$Method <- ifelse(PDAC_MP_both.m_All_sum_missing$variable %in% PDAC_CG_s$id, "Shotgun","Prioritized")
+PDAC_MP_both.m_All_sum_missing$Tiers <- "All Tiers"
+
+PDAC_MP_both.m_combTiers <- rbind(PDAC_MP_both.m_Top_sum_missing,PDAC_MP_both.m_All_sum_missing)
+PDAC_MP_both.m_combTiers$percent <- 100*PDAC_MP_both.m_combTiers$fracMissing
+
+PDAC_MP_both.m_combTiers$percentComplete <- 100 - PDAC_MP_both.m_combTiers$percent
+
+ProtMD_Box <- PDAC_MP_both.m_combTiers %>% ggplot(aes(percentComplete, color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(lwd=1) + coord_flip(xlim = c(0, 100)) + theme_light() + labs(color = "", x = "") + theme_box() + facet_wrap(~factor(Tiers, levels = c("Top Tiers","All Tiers")), scales = "free_x")
+
+ProtMD_Box <- PDAC_MP_both.m_combTiers %>% filter(Tiers == "All Tiers") %>% ggplot(aes(percentComplete, color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(lwd=1) + coord_flip(xlim = c(0, 75)) + theme_light() + labs(color = "", x = "", y = "") + theme_box() + theme(axis.text.y = element_blank(), strip.text = element_text(size = 20),panel.grid.minor.x = element_blank(),panel.grid.major.x = element_blank(),plot.margin = unit(c(0,0,0,0), "cm"),plot.title = element_text(size = 24,hjust = 0.5, vjust = 2)) + facet_wrap(~factor(Tiers, levels = c("Top Tiers","All Tiers")), scales = "free_x")+ scale_color_manual(values = c("blue","red")) + ggtitle("Proteins")  + scale_x_continuous(limits = c(0, 75), breaks = seq(0, 75, by = 15)) + geom_hline(aes(yintercept = 0), color = "grey90")
+#ggsave("FractionMD.png", width = 7, height = 5, units = "in")
+
+
+ProtMD_Box  + plot_annotation(title = 'Single-Cell Protein Detection Consistency',theme = theme(plot.title = element_text(size = 18)))
+ggsave(paste0(FigOut,"ProtMD_consistency_PDAC_fig_v3.png"), width = 5 , height = 5, units = "in")
+
+Fig1d_ProteinConsistency_stats <- PDAC_MP_both.m_combTiers %>% group_by(Method,Tiers) %>% summarize(medianVal = median(percent,na.rm = TRUE),medianCompleteness = median(percentComplete, na.rm = TRUE))
+
+PeptideMD + ProtMD_Box 
+#ggsave("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/Figs/TechnicalFig1/Pep_ProtMD_consistency_PDAC_fig_v3.pdf", width = 7 , height = 5, units = "in")
+ggsave(paste0(FigOut,"Pep_ProtMD_consistency_PDAC_fig_v4_completeness.pdf"), width = 7.2 , height = 5.1, units = "in")
+
+
+
+## Stats for Pub
+#Prot
+Fig1d_ProteinConsistency_stats.pSCoPE <- Fig1d_ProteinConsistency_stats %>% ungroup() %>% dplyr::filter(Method == "Prioritized") %>% dplyr::select(Tiers,medianCompleteness)
+Fig1d_ProteinConsistency_stats.Shotgun <- Fig1d_ProteinConsistency_stats %>% ungroup() %>% dplyr::filter(Method == "Shotgun") %>% dplyr::select(Tiers,medianCompleteness)
+colnames(Fig1d_ProteinConsistency_stats.pSCoPE) <- c("Tiers","pSCoPE")
+colnames(Fig1d_ProteinConsistency_stats.Shotgun) <- c("Tiers","Shotgun")
+
+Fig1d_ProteinConsistency.stats.join <- Fig1d_ProteinConsistency_stats.pSCoPE %>% left_join(Fig1d_ProteinConsistency_stats.Shotgun, by = "Tiers")
+Fig1d_ProteinConsistency.stats.join$PercentageChange <- ((Fig1d_ProteinConsistency.stats.join$pSCoPE- Fig1d_ProteinConsistency.stats.join$Shotgun)/Fig1d_ProteinConsistency.stats.join$Shotgun)*100
+
+#Pep
+Fig1d_PeptideConsistency_stats.pSCoPE <- Fig1d_PeptideConsistency_stats %>% ungroup() %>% dplyr::filter(Method == "Prioritized") %>% dplyr::select(Tier,medianComplete)
+Fig1d_PeptideConsistency_stats.Shotgun <- Fig1d_PeptideConsistency_stats %>% ungroup() %>% dplyr::filter(Method == "Shotgun") %>% dplyr::select(Tier,medianComplete)
+colnames(Fig1d_PeptideConsistency_stats.pSCoPE) <- c("Tiers","pSCoPE")
+colnames(Fig1d_PeptideConsistency_stats.Shotgun) <- c("Tiers","Shotgun")
+Fig1d_PeptideConsistency_stats.join <- Fig1d_PeptideConsistency_stats.pSCoPE %>% left_join(Fig1d_PeptideConsistency_stats.Shotgun, by = "Tiers")
+Fig1d_PeptideConsistency_stats.join$PercentageChange <- ((Fig1d_PeptideConsistency_stats.join$pSCoPE- Fig1d_PeptideConsistency_stats.join$Shotgun)/Fig1d_PeptideConsistency_stats.join$Shotgun)*100
+```
+
+#-----
+# PDAC coverage demo analysis
+#-----
+
+```{r}
+
+evi.cov <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/Coverage_evidence_Shotgun.txt"))
+evi.cov_lim <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/Coverage_evidence_pSCoPE.txt"))
+msmsS.cov <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/Coverage_msmsScans_Shotgun.txt"))
+msmsS.cov_lim <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/Coverage_msmsScans_pSCoPE.txt"))
+msms.cov <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/Coverage_msms_Shotgun.txt"))
+msms.cov_lim <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/Coverage_msms_pSCoPE.txt"))
+
+PDAC_cov_ShotgunSet <- c("wAL00091","wAL00092","wAL00093","wAL00094","wAL00095","wAL00096","wAL00097","wAL00098","wAL00099","wAL00100")
+PDAC_cov_PrioriSet <- c("wAL00120","wAL00121","wAL00122","wAL00123","wAL00124","wAL00125","wAL00126","wAL00127","wAL00129","wAL00130")
+
+evi.cov <- evi.cov %>% dplyr::filter(Raw.file %in% PDAC_cov_ShotgunSet)
+msmsS.cov <- msmsS.cov %>% dplyr::filter(Raw.file %in% PDAC_cov_ShotgunSet)
+msms.cov <- msms.cov %>% dplyr::filter(Raw.file %in% PDAC_cov_ShotgunSet)
+evi.cov_lim <- evi.cov_lim %>% dplyr::filter(Raw.file %in% PDAC_cov_PrioriSet)
+msmsS.cov_lim <- msmsS.cov_lim %>% dplyr::filter(Raw.file %in% PDAC_cov_PrioriSet)
+msms.cov_lim <- msms.cov_lim %>% dplyr::filter(Raw.file %in% PDAC_cov_PrioriSet)
+
+evi.cov <- rbind(evi.cov,evi.cov_lim)
+msmsS.cov <- rbind(msmsS.cov,msmsS.cov_lim)
+msms.cov <- rbind(msms.cov,msms.cov_lim)
+
+# data/sc data frames
+
+CG.cov <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/ChanKey_PDAC_cov_PIF50_mrri10.txt"))
+CG.cov$Raw.file <- str_sub(CG.cov$Raw.file, start = 2)
+
+MDp.cov <- read.delim(paste0(DataPath, "technicalfigs_PDAC/Coverage/Prot_missing_PDAC_cov_PIF50_mrri10.txt")) 
+```
+
+```{r}
+#Productive Scans defined as non-CON/REV identifications
+evi.cov.f <- Empirical_FDR_PEP(evi.cov)
+evi.cov_PSMs <- evi.cov.f %>% dplyr::filter((!grepl("CON",Proteins))&(qVal <= .01)&(!grepl("REV",Proteins))&(Potential.contaminant != "+")&(Reverse != "+")) %>% group_by(Raw.file,Modified.sequence) %>% top_n(-1,PEP) %>% slice(1)
+
+
+msmsS.cov_sum <- msmsS.cov %>% dplyr::group_by(Raw.file) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "MS/MS\nScans")
+evi.cov_PSMs_sum <- evi.cov_PSMs %>% ungroup() %>% dplyr::group_by(Raw.file) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "Peptides")
+
+msmsS.cov_Productive_sum <- msmsS.cov %>% dplyr::group_by(Raw.file) %>% dplyr::filter((!grepl("REV",Proteins))&(!grepl("CON",Proteins))&(Identified == "+")) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "Productive MS/MS\nScans")
+
+msmsS.cov_Productive_sum_v2 <- msmsS.cov_Productive_sum %>% left_join(msmsS.cov_sum, by = "Raw.file")
+msmsS.cov_Productive_sum_v2$numObs <- msmsS.cov_Productive_sum_v2$numObs.x/msmsS.cov_Productive_sum_v2$numObs.y
+msmsS.cov_Productive_sum_v3 <- msmsS.cov_Productive_sum_v2 %>% select(Raw.file,numObs,PSM.filt.x)
+
+msmsS.cov_Productive_sum_v3$Method <- ifelse(msmsS.cov_Productive_sum_v3$Raw.file %in% PDAC_cov_ShotgunSet,"Shotgun",ifelse(msmsS.cov_Productive_sum_v3$Raw.file %in% PDAC_cov_PrioriSet,"Prioritized","Omit"))
+msmsS.cov_sum$Method <- ifelse(msmsS.cov_sum$Raw.file %in% PDAC_cov_ShotgunSet,"Shotgun",ifelse(msmsS.cov_sum$Raw.file %in% PDAC_cov_PrioriSet,"Prioritized","Omit"))
+evi.cov_PSMs_sum$Method <- ifelse(evi.cov_PSMs_sum$Raw.file %in% PDAC_cov_ShotgunSet,"Shotgun",ifelse(evi.cov_PSMs_sum$Raw.file %in% PDAC_cov_PrioriSet,"Prioritized","Omit"))
+
+msmsS.cov_Productive_sum_v3.f <- msmsS.cov_Productive_sum_v3 %>% dplyr::filter(Method != "Omit") 
+msmsS.cov_sum.f <- msmsS.cov_sum %>% dplyr::filter(Method != "Omit") 
+evi.cov_PSMs_sum.f <- evi.cov_PSMs_sum %>% dplyr::filter(Method != "Omit")
+
+comb_MS2_stats <- rbind(msmsS.cov_sum.f,evi.cov_PSMs_sum.f)
+Cov_PSMs_box <- comb_MS2_stats %>% ggplot(aes(x = PSM.filt, y = numObs,color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_cartesian(ylim = c(0,8200)) + theme_box_MSMS() + labs(y = "Total/experiment") + scale_color_manual(values = c("blue","red")) + theme(axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)))
+#ggsave(paste0(FigOut,"MSMS_and_Evi_Stats.pdf"), width = 7 , height = 5, units = "in")
+
+
+ProdScans1 <- msmsS.cov_Productive_sum_v3.f %>% ggplot(aes(x = PSM.filt.x, y = numObs*100,color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_cartesian(ylim = c(0,75)) + theme_box_MSMS() + labs(y = "Productive MS2 Scans, %") + scale_color_manual(values = c("blue","red")) + theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)), axis.text.x = element_blank())
+
+PepsPerRun <- evi.cov_PSMs_sum.f %>% ggplot(aes(x = PSM.filt, y = numObs,color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_cartesian(ylim = c(0,5000)) + theme_box_MSMS() + labs(y = "Peptides/run") + scale_color_manual(values = c("blue","red")) + theme(axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)), axis.text.x = element_blank())
+```
+
+```{r}
+evi.cov.f <- Empirical_FDR_PEP(evi.cov)
+msms.cov.f <- Empirical_FDR_msms(msms.cov) 
+evi.cov_PSMs <- evi.cov.f %>% dplyr::filter((!grepl("CON",Proteins))&(qVal <= .01)&(!grepl("REV",Proteins))&(Potential.contaminant != "+")&(Reverse != "+")) %>% group_by(Raw.file,Modified.sequence) %>% top_n(-1,PEP) %>% slice(1)
+
+msms.cov_1FDR <- msms.cov.f %>% dplyr::filter((!grepl("CON",Proteins))&(qVal <= .01)&(!grepl("REV",Proteins)))
+
+msmsS.cov_sum <- msmsS.cov %>% dplyr::group_by(Raw.file) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "MS/MS\nScans")
+msms.cov_sum <- msms.cov_1FDR %>% dplyr::group_by(Raw.file) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "Productive MS/MS\nScans")
+evi.cov_PSMs_sum <- evi.cov_PSMs %>% ungroup() %>% dplyr::group_by(Raw.file) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "Peptides")
+
+#msms.cov_Productive_sum <- msms.cov %>% dplyr::group_by(Raw.file) %>% dplyr::filter((!grepl("REV",Proteins))&(!grepl("REV",Proteins))&(Identified == "+")) %>% dplyr::summarize(numObs = n()) %>% mutate(PSM.filt = "Productive MS/MS\nScans")
+
+msmsS.cov_Productive_sum_v2 <- msmsS.cov_sum %>% left_join(msms.cov_sum, by = "Raw.file")
+msmsS.cov_Productive_sum_v2$numObs <- msmsS.cov_Productive_sum_v2$numObs.y/msmsS.cov_Productive_sum_v2$numObs.x
+msmsS.cov_Productive_sum_v3 <- msmsS.cov_Productive_sum_v2 %>% select(Raw.file,numObs,PSM.filt.x)
+
+msmsS.cov_Productive_sum_v3$Method <- ifelse(msmsS.cov_Productive_sum_v3$Raw.file %in% PDAC_cov_ShotgunSet,"Shotgun",ifelse(msmsS.cov_Productive_sum_v3$Raw.file %in% PDAC_cov_PrioriSet,"Prioritized","Omit"))
+msmsS.cov_sum$Method <- ifelse(msmsS.cov_sum$Raw.file %in% PDAC_cov_ShotgunSet,"Shotgun",ifelse(msmsS.cov_sum$Raw.file %in% PDAC_cov_PrioriSet,"Prioritized","Omit"))
+evi.cov_PSMs_sum$Method <- ifelse(evi.cov_PSMs_sum$Raw.file %in% PDAC_cov_ShotgunSet,"Shotgun",ifelse(evi.cov_PSMs_sum$Raw.file %in% PDAC_cov_PrioriSet,"Prioritized","Omit"))
+
+msmsS.cov_Productive_sum_v3.f <- msmsS.cov_Productive_sum_v3 %>% dplyr::filter(Method != "Omit") 
+msmsS.cov_sum.f <- msmsS.cov_sum %>% dplyr::filter(Method != "Omit") 
+evi.cov_PSMs_sum.f <- evi.cov_PSMs_sum %>% dplyr::filter(Method != "Omit")
+
+comb_MS2_stats <- rbind(msmsS.cov_sum.f,evi.cov_PSMs_sum.f)
+Cov_PSMs_box <- comb_MS2_stats %>% ggplot(aes(x = PSM.filt, y = numObs,color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_cartesian(ylim = c(0,8200)) + theme_box_MSMS() + labs(y = "Total/experiment") + scale_color_manual(values = c("blue","red")) + theme(axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)))
+#ggsave(paste0(FigOut,"MSMS_and_Evi_Stats.pdf"), width = 7 , height = 5, units = "in")
+
+
+ProdScans1 <- msmsS.cov_Productive_sum_v3.f %>% ggplot(aes(x = PSM.filt.x, y = numObs*100,color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_cartesian(ylim = c(0,75)) + theme_box_MSMS() + labs(y = "Productive MS2 Scans, %") + scale_color_manual(values = c("blue","red")) + theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)), axis.text.x = element_blank(),axis.text = element_text(color = "grey10",hjust = 1)) + scale_y_continuous(limits = c(0, 75), breaks = seq(0, 75, by = 15))
+
+
+PepsPerRun <- evi.cov_PSMs_sum.f %>% ggplot(aes(x = PSM.filt, y = numObs,color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_cartesian(ylim = c(0,5000)) + theme_box_MSMS() + labs(y = "Peptides/run") + scale_color_manual(values = c("blue","red")) + theme(axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)), axis.text.x = element_blank(),axis.text = element_text(color = "grey10",hjust = 1))
+```
+
+```{r}
+CG.s.cov.f <- CG.cov %>% dplyr::filter(celltype == "sc",cvm <.4, Raw.file %in% PDAC_cov_ShotgunSet)
+CG.p.cov.f <- CG.cov %>% dplyr::filter(celltype == "sc",cvm <.4, Raw.file %in% PDAC_cov_PrioriSet)
+
+MDp.cov.m <- melt(MDp.cov)
+
+MDp.s.cov.m.f <- MDp.cov.m %>% dplyr::filter(variable %in% CG.s.cov.f$id) 
+MDp.p.cov.m.f <- MDp.cov.m %>% dplyr::filter(variable %in% CG.p.cov.f$id)
+
+MDp.s.cov.m.f$Method <- "Shotgun" 
+MDp.p.cov.m.f$Method <- "Prioritized"
+
+MDp_join <- rbind(MDp.s.cov.m.f,MDp.p.cov.m.f)
+MDp_join_sum <- MDp_join %>% group_by(variable, Method) %>% dplyr::summarize(numProts = sum(!is.na(value), na.rm = TRUE))
+MDp_join_sum$PSM.filt = "1% FDR"
+
+Cov_Prot_box <- MDp_join_sum %>% ggplot(aes(numProts, color = factor(Method, levels = c("Shotgun","Prioritized")))) + geom_boxplot(alpha=0.5,lwd=1) + coord_flip(xlim = c(0,1250)) + theme_light() + labs(color = "", x = "Proteins/cell", y = "") + theme_box() + scale_color_manual(values = c("blue","red"))  + theme(strip.text = element_text(size = 20), axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),axis.text = element_text(color = "grey10",hjust = 1),panel.grid.minor.x = element_blank(),panel.grid.major.x = element_blank()) + scale_x_continuous(limits = c(0, 1250), breaks = seq(0, 1250, by = 250)) + geom_hline(aes(yintercept = 0), color = "grey90")
+
+
+ProdScans1 + PepsPerRun + Cov_Prot_box  + plot_layout(widths = c(1,1,1), guides = "collect") & theme(legend.position = 'null')
+ggsave(paste0(FigOut,"Coverage_PDAC_rev2_1pFDRMS2.pdf"), width = 7.2 , height = 5.1, units = "in")
+
+ProdScans1 + PepsPerRun + Cov_Prot_box  + plot_layout(widths = c(1,1,1), guides = "collect") & theme(legend.position = 'bottom')
+ggsave(paste0(FigOut,"Coverage_PDAC_rev2_1pFDRMS2_forLegend.pdf"), width = 7.2 , height = 5.1, units = "in")
+```
+
+#----------------------------
+#----------------------------
+# Supplemental technical figs
+#----------------------------
+#----------------------------
+
+#
+
+```{r}
+# PDAC coverage targList and path
+PDAC_coverage_targList <- paste0(DataPath,"tLists/PDAC_Scout_2x_DDA_Final.txt")
+PDAC_coverage_log_path <- paste0(DataPath,"/MQL_log_files/Coverage/")
+
+#re-coding priority b/c we had both RT-only and targetable peptides assigned priority 0
+tList_instance <- read.delim(PDAC_coverage_targList)
+tList_instance$id <- seq(0,nrow(tList_instance)-1,1)
+tList_instance$Orig_Priority <- tList_instance$Priority
+tList_instance$Priority <- ifelse(tList_instance$TargBool == FALSE, 0, tList_instance$Priority + 1)
+
+tList_instance$id <- seq(0,nrow(tList_instance)-1,1)
+logs <- list.files(PDAC_coverage_log_path)
+log_filt <- logs[!(logs %in% c("desktop.ini","1016_20210927-1118.txt"))]
+numLogs <- length(log_filt)
+
+for(i in 1:numLogs){
+  log_instance <- read.delim(paste0(PDAC_coverage_log_path,log_filt[i]), header = FALSE)
+  colnames(log_instance) <-  c("Date","Time","Scan_protocol","RT","Message")
+
+  MS1 <- getMS1(log_instance)
+  MS1_unique <- unique(MS1$id)
+  MS2 <- getMS2(log_instance)
+  tList_instance$seen <- ifelse(tList_instance$id %in% MS1_unique,TRUE,FALSE)
+  tList_instance$MS2d <- ifelse(tList_instance$id %in% MS2$id,TRUE,FALSE)
+  tList_sum <- tList_instance %>% dplyr::group_by(Priority) %>% 
+    dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+  #tList_sum <- tList_instance %>% dplyr::group_by(PriorityTop) %>% 
+    #dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+  #tList_sum3 <- tList_instance %>% dplyr::group_by(PriorityTop3) %>% 
+    #dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+  tList_sum$file_ind <- i
+  if(i ==1){
+    tList_sum_out <-tList_sum
+    #tList_sum_out3 <-tList_sum3
+  }
+  if(i > 1){
+    tList_sum_out <- rbind(tList_sum_out,tList_sum)
+    #tList_sum_out3 <- rbind(tList_sum_out3,tList_sum3)
+  }
+}
+```
+
+```{r}
+# PDAC consistency targList and path
+PDAC_consistency_targList <- "C:/My_Drive/MS/SCoPE/t-SCoPE/TLists/11_05_2021/PDAC_1x_Uniform_1105_3.txt"
+PDAC_consistency_log_path <- "C:/My_Drive/MS/SCoPE/t-SCoPE/dat/PDAC_tier_102921/MQLive_Logs/"
+
+#re-coding priority b/c we had both RT-only and targetable peptides assigned priority 0
+tList_instance.consist <- read.delim(PDAC_consistency_targList)
+tList_instance.consist$id <- seq(0,nrow(tList_instance.consist)-1,1)
+tList_instance.consist$Orig_Priority <- tList_instance.consist$Priority
+tList_instance.consist$Priority <- ifelse(tList_instance.consist$TargBool == FALSE, 0, tList_instance.consist$Priority + 1)
+tList_instance.consist$PriorityTop <- ifelse(tList_instance.consist$Priority %in% c(4,3),"Top","Bottom")
+tList_instance.consist$PriorityTop3 <- ifelse(tList_instance.consist$Priority %in% c(4,3,2),"Top","Bottom")
+
+tList_instance.consist$id <- seq(0,nrow(tList_instance.consist)-1,1)
+
+log_Match_DF.consist <- data.frame(log = character(), stringsAsFactors = FALSE)
+
+logs.consistency <- list.files(PDAC_consistency_log_path)
+log.consistency_filt <- logs.consistency[!(logs.consistency %in% c("desktop.ini","1029_20211105-2240.txt","1029_20211106-0841.txt"))]
+numLogs.consistency <- length(log.consistency_filt)
+
+for(i in 1:numLogs.consistency){
+  log_instance <- read.delim(paste0(PDAC_consistency_log_path,log.consistency_filt[i]), header = FALSE)
+  colnames(log_instance) <-  c("Date","Time","Scan_protocol","RT","Message")
+
+  MS1 <- getMS1(log_instance)
+  MS1_unique <- unique(MS1$id)
+  MS2 <- getMS2(log_instance)
+  tList_instance.consist$seen <- ifelse(tList_instance.consist$id %in% MS1_unique,TRUE,FALSE)
+  tList_instance.consist$MS2d <- ifelse(tList_instance.consist$id %in% MS2$id,TRUE,FALSE)
+  tList_sum <- tList_instance.consist %>% dplyr::group_by(Priority) %>% 
+    dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+  #tList_sum3 <- tList_instance.consist %>% dplyr::group_by(PriorityTop3) %>% 
+  # dplyr::summarize(seenSum = sum(seen),seenFrac = seenSum/n(), MS2Sum = sum(MS2d),MS2Frac = MS2Sum/n())
+  tList_sum$file_ind <- i
+  if(i ==1){
+    tList_sum_out.consistency <-tList_sum
+  #  tList_sum_out3.consistency <-tList_sum3
+  }
+  if(i > 1){
+    tList_sum_out.consistency <- rbind(tList_sum_out.consistency,tList_sum)
+  #  tList_sum_out3.consistency <- rbind(tList_sum_out3.consistency,tList_sum3)
+  }
+}
+
+```
+
+```{r}
+targList_cov_sum <- tList_instance %>% dplyr::group_by(Priority) %>% dplyr::summarize(TargCount = n())
+targList_consist_sum <- tList_instance.consist %>% dplyr::group_by(Priority) %>% dplyr::summarize(TargCount = n())
+```
+
+
+```{r}
+# BMDM and PDAC coverage
+Priority_dict.cov <- data.frame(Priority = numeric(), Title = character(), stringsAsFactors = FALSE)
+Priority_dict.cov[1:4,1] <- c(3,2,1,0)
+Priority_dict.cov[1:4,2] <- c("High","Medium","Low","RT only")
+
+# PDAC consistency
+Priority_dict.consist <- data.frame(Priority = numeric(), Title = character(), stringsAsFactors = FALSE)
+Priority_dict.consist[1:5,1] <- c(4,3,2,1,0)
+Priority_dict.consist[1:5,2] <- c("High 1","High 2","Medium","Low","RT only")
+
+tList_sum_out.cov.j <- tList_sum_out %>% left_join(Priority_dict.cov, by = "Priority")
+tList_sum_out.cov.j.f <- tList_sum_out.cov.j %>% select(seenFrac,MS2Frac,Priority,file_ind,Title)
+tList_sum_out.cov.j.f.m <- melt(tList_sum_out.cov.j.f, id.vars = c("file_ind","Priority","Title"))
+
+tList_sum_out.consistency.j <- tList_sum_out.consistency %>% left_join(Priority_dict.consist, by = "Priority")
+tList_sum_out.consistency.j.f <- tList_sum_out.consistency.j %>% select(seenFrac,MS2Frac,Priority,file_ind,Title)
+tList_sum_out.consistency.j.f.m <- melt(tList_sum_out.consistency.j.f, id.vars = c("file_ind","Priority","Title"))
+
+tList_sum_out.cov.j.f.m <- tList_sum_out.cov.j.f.m %>% left_join(targList_cov_sum, by = "Priority")
+tList_sum_out.consist.j.f.m <- tList_sum_out.consistency.j.f.m %>% left_join(targList_consist_sum, by = "Priority")
+
+tList_sum_out.cov.j.f.m %>% ggplot(aes(value, color = variable)) + geom_boxplot(lwd = 1) + 
+  ggtitle("Technical Performance: Coverage Experiments") + 
+  coord_flip() + 
+  theme_light() + 
+  theme(axis.text.x =  element_blank(), 
+        strip.background = element_rect(color = "grey70", fill = "transparent"), 
+        strip.text = element_text(color= "black", size = 18),legend.position = "bottom",
+        axis.text.y = element_text(size =14),
+        axis.title.y = element_text(size =16),
+        plot.title = element_text(size = 18),
+        legend.text = element_text(size = 14)) + 
+  labs(color = "", x = "Fraction of Prioritized Peptides") + 
+  facet_wrap(~factor(Title,levels = c("High","Medium","Low","RT only")), nrow = 1)+
+  scale_color_manual(values = c("black","grey60")) + geom_text( x = .1, y = 0,color = "grey10",aes(label = paste0(TargCount,"\n Precursors")))
+ggsave(paste0(FigOut,"PDAC_coverage_MQliveStats.png"), width = 6, height = 4, units = "in")
+
+tList_sum_out.consist.j.f.m %>% ggplot(aes(value, color = variable)) + geom_boxplot(lwd = 1) + 
+  ggtitle("Technical Performance: Consistency Experiments") + 
+  coord_flip() + 
+  theme_light() + 
+  theme(axis.text.x =  element_blank(), 
+        strip.background = element_rect(color = "grey70", fill = "transparent"), 
+        strip.text = element_text(color= "black", size = 18),legend.position = "bottom",
+        axis.text.y = element_text(size =14),
+        axis.title.y = element_text(size =16),
+        plot.title = element_text(size = 18),
+        legend.text = element_text(size = 14)) + 
+  labs(color = "", x = "Fraction of Prioritized Peptides") + 
+  facet_wrap(~factor(Title,levels = c("High 1","High 2","Medium","Low","RT only")), nrow = 1)+
+  scale_color_manual(values = c("black","grey60")) + geom_text( x = .1, y = 0,color = "grey10",aes(label = paste0(TargCount,"\n Precursors")))
+ggsave(paste0(FigOut,"PDAC_consist_MQliveStats.png"), width = 6, height = 4, units = "in")
+```
+
+
+```{r}
+#figOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/Figs/v2_figs/SupplementalFigs/"
+
+Priority_dict_consist <- data.frame(Priority = numeric(), Title = character(), stringsAsFactors = FALSE)
+Priority_dict_consist[1:5,1] <- c(4,3,2,1,0)
+Priority_dict_consist[1:5,2] <- c("High 1","High 2","Medium","Low","RT only")
+
+#------------------------
+# Reading search results
+#------------------------
+consist_shotgun <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Consistency_msms_Shotgun.txt"))
+consist_priori <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Consistency_msms_pSCoPE.txt"))
+
+consist_shotgun$SeqCharge <- paste0(consist_shotgun$Modified.sequence, consist_shotgun$Charge)
+consist_priori$SeqCharge <- paste0(consist_priori$Modified.sequence, consist_priori$Charge)
+
+consist_shotgun_evi <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Consistency_evidence_Shotgun.txt"))
+consist_priori_evi <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Consistency/Consistency_evidence_pSCoPE.txt"))
+
+consist_shotgun_evi$SeqCharge <- paste0(consist_shotgun_evi$Modified.sequence, consist_shotgun_evi$Charge)
+consist_priori_evi$SeqCharge <- paste0(consist_priori_evi$Modified.sequence, consist_priori_evi$Charge)
+
+#------------------------
+# Reading targeting list and reformating tiers for visualizing RT-only peptides separately
+#------------------------
+targList_instance_consist <- read.delim(paste0(DataPath,"tLists/PDAC_1x_Uniform_1105_3.txt"))
+targList_instance_consist$id <- seq(0,nrow(targList_instance_consist)-1,1)
+targList_instance_consist$Orig_Priority <- targList_instance_consist$Priority
+targList_instance_consist$Priority <- ifelse(targList_instance_consist$TargBool == FALSE, 0,targList_instance_consist$Priority + 1)
+
+#------------------------
+# Filtering search results
+#------------------------
+
+ShotgunSet <- c("wAL00295","wAL00296","wAL00297","wAL00298","wAL00299","wAL00300")
+PrioriSet <- c("wAL00305","wAL00307","wAL00308","wAL00309","wAL00310","wAL00311")
+
+consist_shotgun.f <- consist_shotgun %>% dplyr::filter(Raw.file %in% ShotgunSet) %>% group_by(Raw.file, SeqCharge) %>% top_n(-1, PEP) %>% slice(1)
+consist_priori.f <- consist_priori %>% dplyr::filter(Raw.file %in% PrioriSet) %>% group_by(Raw.file, SeqCharge) %>% top_n(-1, PEP) %>% slice(1)
+
+consist_shotgun_evi.f <- consist_shotgun_evi %>% dplyr::filter(Raw.file %in% ShotgunSet)
+consist_priori_evi.f <- consist_priori_evi %>% dplyr::filter(Raw.file %in% PrioriSet)
+
+consist_priori_evi.fFDR <- Empirical_FDR_PEP(consist_priori_evi.f)
+consist_priori_evi.fFDR <- consist_priori_evi.fFDR %>% dplyr::filter(qVal <= .01)
+
+consist_shotgun_evi.f.t <- consist_shotgun_evi.f %>% filter(SeqCharge %in% targList_instance_consist$SeqCharge)
+
+#------------------------
+# Extracting fragment info and joining with evidence
+#------------------------
+consist_shotgun.f_frag <- consist_shotgun.f %>% dplyr::select(Raw.file,SeqCharge,Number.of.matches)
+consist_shotgun_evi.f.t2 <- consist_shotgun_evi.f.t %>% left_join(consist_shotgun.f_frag, by = c("Raw.file","SeqCharge"))
+
+consist_shotgun_evi.f.t2_sum <- consist_shotgun_evi.f.t2 %>% group_by(SeqCharge) %>% summarize(medianFrag = median(Number.of.matches, na.rm = TRUE),medianPEP = median(PEP,na.rm = TRUE))
+
+interSeq<- intersect(consist_shotgun_evi.f.t2_sum$SeqCharge, consist_priori_evi.fFDR$SeqCharge)
+
+consist_shotgun_evi.f.t2_sum$IDd <- ifelse(consist_shotgun_evi.f.t2_sum$SeqCharge %in% interSeq,"PSM, 1% FDR", "No PSM, 1% FDR")
+consist_shotgun_evi.f.t2_sum$Targ <- ifelse(consist_shotgun_evi.f.t2_sum$SeqCharge %in% consist_shotgun_evi.f.t2_sum$SeqCharge,TRUE, FALSE)
+consist_shotgun_evi.f.t2_sum <- consist_shotgun_evi.f.t2_sum %>% dplyr::filter(Targ == TRUE) 
+consist_shotgun_evi.f.t2_sum$negLogPEP <- -log10(consist_shotgun_evi.f.t2_sum$medianPEP)
+consist_shotgun_evi.f.t2_sum$binPEP <- ifelse(consist_shotgun_evi.f.t2_sum$negLogPEP >= 5,5,consist_shotgun_evi.f.t2_sum$negLogPEP)
+
+
+consist_shotgun_evi.f.t2_sum3 <- consist_shotgun_evi.f.t2_sum %>% left_join(targList_instance_consist, by = "SeqCharge")
+
+consist_shotgun_evi.f.t2_sum3 <- consist_shotgun_evi.f.t2_sum3 %>% left_join(Priority_dict_consist, by = "Priority")
+
+consist_shotgun_evi.f.t2_sum3_RTOnly <- consist_shotgun_evi.f.t2_sum3 %>% filter(Priority == 0)
+consist_shotgun_evi.f.t2_sum3_targ <- consist_shotgun_evi.f.t2_sum3 %>% filter(Priority != 0)
+consist_shotgun_evi.f.t2_sum3_RTOnly.f <- consist_shotgun_evi.f.t2_sum3_RTOnly %>% filter(!(SeqCharge %in% consist_shotgun_evi.f.t2_sum3_targ$SeqCharge),IDd == "PSM")
+
+
+consist_shotgun_evi.f.t2_sum3_PEP <- consist_shotgun_evi.f.t2_sum3 %>% group_by(IDd,Priority) %>% summarize(medPEP = median(negLogPEP),medFrag = median(medianFrag))
+
+consist_shotgun_evi.f.t2_sum3 <- consist_shotgun_evi.f.t2_sum3 %>% left_join(consist_shotgun_evi.f.t2_sum3_PEP, by = c("IDd","Priority"))
+```
+
+
+```{r Plots}
+consist_shotgun_evi.f.t2_sum3 %>% ggplot(aes(binPEP, fill = IDd)) + geom_histogram(position = position_identity(), alpha = 0.5) + theme_light()   + facet_wrap(~factor(Title, levels = c("High 1","High 2","Medium","Low","RT only")),nrow = 1, scales = "free_x") + geom_vline(aes(xintercept = medPEP, color = IDd)) + labs(x = "-log10(PEP)", y = "Prioritized Precursors", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size=18),
+  legend.text = element_text(size = 14),
+  strip.text = element_text(color = "black",size = 16),
+  strip.background = element_rect(fill = "white", color = "grey70"),
+  legend.position = "bottom",
+  plot.title = element_text(size = 18)
+) + ggtitle("Shotgun PSM Properties:  PEP")
+ggsave(paste0(FigOut,"PSMs1pFDR_PEPHistogram_forPub.pdf"), width = 7, height = 5, units = "in")
+
+consist_shotgun_evi.f.t2_sum3 %>% ggplot(aes(medianFrag, fill = IDd)) + geom_histogram(position = position_identity(), alpha = 0.5) + theme_light()   + facet_wrap(~factor(Title, levels = c("High 1","High 2","Medium","Low","RT only")),nrow = 1, scales = "free_x") + geom_vline(aes(xintercept = medFrag, color = IDd)) + labs(x = "Number of Matching Fragments", y = "Prioritized Precursors", color = "", fill = "") + coord_flip()+ theme(axis.text.x = element_text(angle = 45, hjust = 1),
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size=18),
+  legend.text = element_text(size = 14),
+  strip.text = element_text(color = "black",size = 16),
+  strip.background = element_rect(fill = "white", color = "grey70"),
+  legend.position = "bottom",
+  plot.title = element_text(size = 18)
+)  + ggtitle("Shotgun PSM Properties: Matching Fragments") 
+ggsave(paste0(FigOut,"PSMs1pFDR_fragHistogram_forPub.pdf"), width = 7, height = 5, units = "in")  
+  
+consist_shotgun_evi.f.t2_sum3 %>% filter(Priority != 0) %>% ggplot(aes(binPEP, color = IDd)) + geom_density(position = position_identity(), alpha = 0.5, lwd = 2) + theme_light()  + labs(x = "-log10(PEP)", y = "Prioritized Precursors, Density", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size=18),
+  legend.text = element_text(size = 14),
+  strip.text = element_text(color = "black",size = 16),
+  strip.background = element_rect(fill = "white", color = "grey70"),
+  legend.position = "bottom",
+  plot.title = element_text(size = 18)
+) + ggtitle("Shotgun PSM Properties:  PEP")
+ggsave(paste0(FigOut,"PSMs1pFDR_PEPDensity_forPub.pdf"), width = 6, height = 5, units = "in")
+
+consist_shotgun_evi.f.t2_sum3 %>% filter(Priority != 0) %>% ggplot(aes(medianFrag, color = IDd)) + geom_density(position = position_identity(), alpha = 0.5, lwd = 2) + theme_light()  + labs(x = "Number of Matching Fragments", y = "Prioritized Precursors, Density", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size=18),
+  legend.text = element_text(size = 14),
+  strip.text = element_text(color = "black",size = 16),
+  strip.background = element_rect(fill = "white", color = "grey70"),
+  legend.position = "bottom",
+  plot.title = element_text(size = 18)
+) + ggtitle("Shotgun PSM Properties: Matching Fragments")
+ggsave(paste0(FigOut,"PSMs1pFDR_FragDensity_forPub.pdf"), width = 6, height = 5, units = "in")
+
+consist_shotgun_evi.f.t2_sum3 %>% ggplot(aes(binPEP, color = factor(IDd, levels = c("PSM, 1% FDR","No PSM, 1% FDR")))) + geom_boxplot(alpha = 0.5) + theme_light()  + labs(x = "-log10(PEP)", y = "", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_blank(),
+  axis.title = element_text(size=15),
+  legend.text = element_text(size = 12),
+  strip.text = element_text(size = 16),
+  legend.position = "bottom",
+  plot.title = element_text(size = 18)
+) + ggtitle("Shotgun PSM Properties:  PEP")
+ggsave(paste0(FigOut,"PSMs1pFDR_PEPBoxplot_forPub.pdf"), width = 5, height = 5, units = "in")
+
+consist_shotgun_evi.f.t2_sum3 %>% ggplot(aes(medianFrag, fill = factor(IDd, levels = c("PSM, 1% FDR","No PSM, 1% FDR")))) + geom_boxplot(alpha = 0.5) + theme_light()  + labs(x = "Number of Matching Fragments", y = "", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_blank(),
+  axis.title = element_text(size=15),
+  legend.text = element_text(size = 12),
+  strip.text = element_text(size = 16),
+  legend.position = "bottom",
+  plot.title = element_text(size = 18)
+) + ggtitle("Shotgun PSM Properties: Matching Fragments")
+ggsave(paste0(FigOut,"PSMs1pFDR_FragBoxplot_forPub.pdf"), width = 5, height = 5, units = "in")
+```
+
+
+
+
