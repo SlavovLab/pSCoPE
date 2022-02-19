@@ -1,5 +1,5 @@
 ---
-title: "PDAC_technical_figure_generation_script"
+title: "PDAC_BMDM_technical_figure_generation_script"
 output: html_document
 ---
 
@@ -872,5 +872,331 @@ ggsave(paste0(FigOut,"PSMs1pFDR_FragBoxplot_forPub.pdf"), width = 5, height = 5,
 ```
 
 
+#----------------------------
+# BMDM technical motivation figure
+#----------------------------
 
 
+```{r}
+
+BMDM_ShotgunSet <- c("wGH0456","wGH0457","wGH0458","wGH0459","wGH0460","wGH0461","wGH0462","wGH0463","wGH0464","wGH0465","wGH0466","wGH0467","wGH0468","wGH0469","wGH0470","wGH0471","wGH0472","wGH0473","wGH0474","wGH0475")
+BMDM_PrioriSet <- c("wGH0500","wGH0501","wGH0502","wGH0503","wGH0504","wGH0505","wGH0506","wGH0507","wGH0508","wGH0509","wGH0510","wGH0511","wGH0512","wGH0513","wGH0514","wGH0515","wGH0516","wGH0517","wGH0518","wGH0519")
+
+
+#BMDM_CG.s <- read.delim(paste0(BMDM_basePath,"ChanKey_Bio_Shot_20_PIF50.txt"))
+#BMDM_CG.p <- read.delim(paste0(BMDM_basePath,"ChanKey_Bio_pSCoPE_20_PIF50.txt"))
+BMDM_CG <- read.delim(paste0(DataPath,"technicalfigs_BMDM/ChanKey_BMDM_20Shotgun20pSCoPE_mrri02_PIF50_DART_FDR1p.txt"))
+
+#BMDM_t0.s <- read.delim(paste0(BMDM_basePath,"t0Bio_BMDM_PIF50_limFASTA_ShotgunOnly.txt"))
+#BMDM_t0.p <- read.delim(paste0(BMDM_basePath,"t0Bio_BMDM_PIF50_limFASTA_pSCoPEOnly.txt"))
+#BMDM_t0.s <- read.delim(paste0(BMDM_basePath,"t0Bio_Shot_20_PIF50.txt"))
+#BMDM_t0.p <- read.delim(paste0(BMDM_basePath,"t0Bio_pSCoPE_20_PIF50.txt"))
+BMDM_t0 <- read.delim(paste0(DataPath,"technicalfigs_BMDM/t0_BMDM_20Shotgun20pSCoPE_mrri02_PIF50_DART_1pFDR.txt")) 
+
+#BMDM_MDp.s <- read.delim(paste0(BMDM_basePath,"Prot_missing_BMDM_PIF50_limFASTA_ShotgunOnly_Bio.txt"))
+#BMDM_MDp.p <- read.delim(paste0(BMDM_basePath,"Prot_missing_BMDM_PIF50_limFASTA_pSCoPEOnly_Bio.txt"))
+#BMDM_MDp.s <- read.delim(paste0(BMDM_basePath,"Prot_missing_Shot_20_PIF50_Bio.txt"))
+#BMDM_MDp.p <- read.delim(paste0(BMDM_basePath,"Prot_missing_pSCoPE_20_PIF50_Bio.txt"))
+BMDM_MDp <- read.delim(paste0(DataPath,"technicalfigs_BMDM/Prot_missing_BMDM_20Shotgun20pSCoPE_mrri02_PIF50_DART_1pFDR.txt"))
+  
+#BMDM_tList <- read.delim("C:/My_Drive/MS/SCoPE/t-SCoPE/TLists/08_10_2021/CEO_TargList_081021_2.txt")
+BMDM_tList <- read.delim(paste0(DataPath,"tLists/CEO_TargList_081021_2.txt"))
+tList_priorityDictionary <- BMDM_tList %>% dplyr::filter(TargBool == TRUE) %>% dplyr::select(SeqCharge,Priority)
+
+
+
+#BMDM_CG.s$Raw.file <- str_sub(BMDM_CG.s$Raw.file, start = 2)
+#BMDM_CG.p$Raw.file <- str_sub(BMDM_CG.p$Raw.file, start = 2)
+BMDM_CG$Raw.file <- str_sub(BMDM_CG$Raw.file, start = 2)
+
+#BMDM_CG.s <- BMDM_CG.s %>% filter(Raw.file %in% BMDM_ShotgunSet, celltype != "control", cvm < .4)
+#BMDM_CG.p <- BMDM_CG.p %>% filter(Raw.file %in% BMDM_PrioriSet, celltype != "control", cvm < .4)
+BMDM_CG.s <- BMDM_CG %>% filter(Raw.file %in% BMDM_ShotgunSet, celltype != "control", cvm < .4)
+BMDM_CG.p <- BMDM_CG %>% filter(Raw.file %in% BMDM_PrioriSet, celltype != "control", cvm < .4)
+
+#BMDM_t0.s.m <- melt(BMDM_t0.s)
+#BMDM_t0.p.m <- melt(BMDM_t0.p)
+BMDM_t0.m <- melt(BMDM_t0)
+
+
+#####
+# *** Start back up here ***
+#####
+
+BMDM_t0.s.m <- BMDM_t0.m %>% dplyr::filter(variable %in% BMDM_CG.s$id)
+BMDM_t0.p.m <- BMDM_t0.m %>% dplyr::filter(variable %in% BMDM_CG.p$id)
+
+BMDM_t0.s.m_seqSum <- BMDM_t0.s.m %>% dplyr::group_by(SeqCharge) %>% dplyr::summarize(MD = sum(is.na(value))) %>% filter(MD > 0)
+BMDM_t0.p.m_seqSum <- BMDM_t0.p.m %>% dplyr::group_by(SeqCharge) %>% dplyr::summarize(MD = sum(is.na(value))) %>% filter(MD > 0)
+
+intersectBMDM <- intersect(BMDM_t0.s.m_seqSum$SeqCharge,BMDM_t0.p.m_seqSum$SeqCharge) 
+
+BMDM_t0.s.m_inter <- BMDM_t0.s.m %>% filter(SeqCharge %in% intersectBMDM) 
+BMDM_t0.p.m_inter <- BMDM_t0.p.m %>% filter(SeqCharge %in% intersectBMDM)
+
+BMDM_t0.s.m_inter2 <- BMDM_t0.s.m_inter %>% left_join(tList_priorityDictionary, by = "SeqCharge")
+BMDM_t0.p.m_inter2 <- BMDM_t0.p.m_inter %>% left_join(tList_priorityDictionary, by = "SeqCharge")
+
+BMDM_t0.s.m_inter2_groupCount <- BMDM_t0.s.m_inter2 %>% group_by(SeqCharge,Priority) %>% slice(1)
+BMDM_t0.p.m_inter2_groupCount <- BMDM_t0.p.m_inter2 %>% group_by(SeqCharge,Priority) %>% slice(1)
+
+BMDM_t0.s.m_inter2_groupCount_sum <- BMDM_t0.s.m_inter2_groupCount %>% dplyr::group_by(Priority) %>% dplyr::summarize(num = n()) %>% mutate(Method = "Shotgun")
+BMDM_t0.p.m_inter2_groupCount_sum <- BMDM_t0.p.m_inter2_groupCount %>% dplyr::group_by(Priority) %>% dplyr::summarize(num = n()) %>% mutate(Method = "Prioritization") 
+
+PriorityCounts <- rbind(BMDM_t0.s.m_inter2_groupCount_sum,BMDM_t0.p.m_inter2_groupCount_sum)
+
+BMDM_t0.s.m_inter_sum <- BMDM_t0.s.m_inter2 %>% dplyr::group_by(variable,Priority) %>% dplyr::summarize(fracMD = sum(is.na(value))/n()) %>% mutate(Method = "Shotgun")
+BMDM_t0.p.m_inter_sum <- BMDM_t0.p.m_inter2 %>% dplyr::group_by(variable, Priority) %>% dplyr::summarize(fracMD = sum(is.na(value))/n()) %>% mutate(Method = "Prioritization")
+
+BMDM_inter_bind <- rbind(BMDM_t0.s.m_inter_sum,BMDM_t0.p.m_inter_sum)
+#BMDM_inter_bind2 <- BMDM_inter_bind %>% left_join(BMDM_tList, by = "SeqCharge")
+
+BMDM_inter_bind <- BMDM_inter_bind %>% left_join(PriorityCounts, by = c("Method","Priority"))
+
+precursor_MD <- BMDM_inter_bind %>% ggplot(aes(fracMD*100, fill = Method)) + geom_boxplot() + coord_flip(xlim = c(0,100)) + labs(x = "% Missing Data") + theme_box() + theme(legend.position = "bottom") + ggtitle("Precursor-Level Missing Data","by priority tier") + facet_wrap(~factor(Priority, levels = c("3","2","1",NA)), nrow = 1) + geom_text(aes(x = 15 , y = 0 , label = paste(num, "precursors")))
+
+#--------
+# peptide-level
+#--------
+
+# How to handle when peptides could be on multiple tiers due to charge states
+
+BMDM_t0.s.m_pep <- BMDM_t0.s.m
+BMDM_t0.p.m_pep <- BMDM_t0.p.m
+
+BMDM_t0.s.m_pep$Peptide <- str_sub(BMDM_t0.s.m_pep$SeqCharge, end = -2)
+BMDM_t0.p.m_pep$Peptide <- str_sub(BMDM_t0.p.m_pep$SeqCharge, end = -2)
+
+BMDM_t0.s.m_pepSum <- BMDM_t0.s.m_pep %>% dplyr::group_by(Peptide, variable) %>% dplyr::summarize(Val = sum(value, na.rm = TRUE))
+BMDM_t0.p.m_pepSum <- BMDM_t0.p.m_pep %>% dplyr::group_by(Peptide, variable) %>% dplyr::summarize(Val = sum(value, na.rm = TRUE))
+
+BMDM_t0.s.m_pepSum$Val2 <- ifelse(BMDM_t0.s.m_pepSum$Val == 0, NA,BMDM_t0.s.m_pepSum$Val)
+BMDM_t0.p.m_pepSum$Val2 <- ifelse(BMDM_t0.p.m_pepSum$Val == 0, NA,BMDM_t0.p.m_pepSum$Val)
+
+interPepBMDM <- intersect(BMDM_t0.s.m_pepSum$Peptide,BMDM_t0.p.m_pepSum$Peptide) 
+
+BMDM_t0.s.m_pepSum_inter <- BMDM_t0.s.m_pepSum %>% filter(Peptide %in% interPepBMDM) 
+BMDM_t0.p.m_pepSum_inter <- BMDM_t0.p.m_pepSum %>% filter(Peptide %in% interPepBMDM)
+
+tList_priorityDictionary$Peptide <- str_sub(tList_priorityDictionary$SeqCharge, end = -2) 
+tList_priorityDictionary_lim <- tList_priorityDictionary %>% group_by(Peptide) %>% top_n(1, Priority) %>% slice(1)
+
+BMDM_t0.s.m_pepSum_inter2 <- BMDM_t0.s.m_pepSum_inter %>% left_join(tList_priorityDictionary_lim, by = "Peptide")
+BMDM_t0.p.m_pepSum_inter2 <- BMDM_t0.p.m_pepSum_inter %>% left_join(tList_priorityDictionary_lim, by = "Peptide")
+
+BMDM_t0.s.m_pepSum_inter2_groupCount <- BMDM_t0.s.m_pepSum_inter2 %>% group_by(Peptide,Priority) %>% slice(1)
+BMDM_t0.p.m_pepSum_inter2_groupCount <- BMDM_t0.p.m_pepSum_inter2 %>% group_by(Peptide,Priority) %>% slice(1)
+
+BMDM_t0.s.m_pepSum_inter2_groupCount_sum <- BMDM_t0.s.m_pepSum_inter2_groupCount %>% dplyr::group_by(Priority) %>% dplyr::summarize(num = n()) %>% mutate(Method = "Shotgun")
+BMDM_t0.p.m_pepSum_inter2_groupCount_sum <- BMDM_t0.p.m_pepSum_inter2_groupCount %>% dplyr::group_by(Priority) %>% dplyr::summarize(num = n()) %>% mutate(Method = "Prioritization") 
+
+PriorityCountsPep <- rbind(BMDM_t0.s.m_pepSum_inter2_groupCount_sum,BMDM_t0.p.m_pepSum_inter2_groupCount_sum)
+
+BMDM_t0.s.m_pepSum_inter_sum <- BMDM_t0.s.m_pepSum_inter2 %>% dplyr::group_by(variable,Priority) %>% dplyr::summarize(fracMD = sum(is.na(Val2))/n()) %>% mutate(Method = "Shotgun")
+BMDM_t0.p.m_pepSum_inter_sum <- BMDM_t0.p.m_pepSum_inter2 %>% dplyr::group_by(variable, Priority) %>% dplyr::summarize(fracMD = sum(is.na(Val2))/n()) %>% mutate(Method = "Prioritization")
+
+BMDM_interPep_bind <- rbind(BMDM_t0.s.m_pepSum_inter_sum,BMDM_t0.p.m_pepSum_inter_sum)
+#BMDM_inter_bind2 <- BMDM_inter_bind %>% left_join(BMDM_tList, by = "SeqCharge")
+
+BMDM_interPep_bind <- BMDM_interPep_bind %>% left_join(PriorityCountsPep, by = c("Method","Priority"))
+BMDM_interPep_bind$DataCompleteness <- 1 - BMDM_interPep_bind$fracMD
+
+peptide_MD <- BMDM_interPep_bind %>% ggplot(aes(fracMD*100, fill = Method)) + geom_boxplot() + coord_flip(xlim = c(0,100)) + labs(x = "% Missing Data") + theme_box() + theme(legend.position = "bottom") + ggtitle("Peptide-Level Missing Data","by priority tier") + facet_wrap(~factor(Priority, levels = c("3","2","1",NA)), nrow = 1) + geom_text(aes(x = 15 , y = 0 , label = paste(num, "peptides")))
+
+#precursor_MD 
+#peptide_MD
+
+#------
+# Protein level
+#------
+
+#BMDM_ev.s <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_BMDM_PIF50_limFASTA_ShotgunOnly.txt"))
+#BMDM_ev.p <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_BMDM_PIF50_limFASTA_pSCoPEOnly.txt"))
+
+#BMDM_ev.s <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_Shot_20_PIF50.txt"))
+#BMDM_ev.p <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_pSCoPE_20_PIF50.txt"))
+BMDM_ev <- read.delim(paste0(DataPath,"technicalfigs_BMDM/ev_20Shotgun20pSCoPE_02182022_mrri02_PIF50_DART_1pFDR.txt"))
+
+BMDM_ev <- BMDM_ev %>% select(-Acetyl..Protein.N.term.)
+##BMDM_ev <- rbind(BMDM_ev.s,BMDM_ev.p)
+BMDM_ev$SeqCharge <- BMDM_ev$modseq
+BMDM_ev_lim <- BMDM_ev %>% dplyr::select(SeqCharge, Leading.razor.protein) %>% group_by(SeqCharge) %>% slice(1)
+
+# Perhaps better is to go from Sequence to Protein
+
+BMDM_t0.s.m_4Prot <- BMDM_t0.s.m
+BMDM_t0.p.m_4Prot <- BMDM_t0.p.m
+
+BMDM_t0.s.m_4Prot <- BMDM_t0.s.m_4Prot %>% left_join(BMDM_ev_lim, by = "SeqCharge") 
+BMDM_t0.p.m_4Prot <- BMDM_t0.p.m_4Prot %>% left_join(BMDM_ev_lim, by = "SeqCharge")
+
+BMDM_t0.s.m_4Protsum <- BMDM_t0.s.m_4Prot %>% dplyr::group_by(variable, Leading.razor.protein) %>% dplyr::summarize(ProtVal = sum(value, na.rm = TRUE))
+BMDM_t0.p.m_4Protsum <- BMDM_t0.p.m_4Prot %>% dplyr::group_by(variable, Leading.razor.protein) %>% dplyr::summarize(ProtVal = sum(value, na.rm = TRUE))
+
+prot_inter <- intersect(BMDM_t0.s.m_4Protsum$Leading.razor.protein,BMDM_t0.p.m_4Protsum$Leading.razor.protein)
+
+BMDM_t0.s.m_4Protsum_inter <- BMDM_t0.s.m_4Protsum %>% dplyr::filter(Leading.razor.protein %in% prot_inter) %>% dplyr::mutate(Method = "Shotgun")
+BMDM_t0.p.m_4Protsum_inter <- BMDM_t0.p.m_4Protsum %>% dplyr::filter(Leading.razor.protein %in% prot_inter) %>% dplyr::mutate(Method = "Prioritization")
+
+BMDM_prot <- rbind(BMDM_t0.s.m_4Protsum_inter,BMDM_t0.p.m_4Protsum_inter)
+
+tList_priorityDictionary_Protlim <- BMDM_tList %>% dplyr::filter(TargBool == TRUE) %>% dplyr::select(Leading.razor.protein,Priority) %>% group_by(Leading.razor.protein) %>% top_n(1, Priority) %>% slice(1)
+
+BMDM_prot <- BMDM_prot %>% left_join(tList_priorityDictionary_Protlim, by = "Leading.razor.protein")
+
+BMDM_prot$Val2 <- ifelse(BMDM_prot$ProtVal == 0, NA, BMDM_prot$ProtVal)
+
+BMDM_prot_sum <- BMDM_prot %>% dplyr::group_by(variable, Priority, Method) %>% dplyr::summarize(fracMD = sum(is.na(Val2))/n())
+
+BMDM_prot_sumPriority <- BMDM_prot %>% dplyr::group_by(Priority, Leading.razor.protein) %>% slice(1)
+BMDM_prot_sumPriority2 <- BMDM_prot_sumPriority %>% dplyr::ungroup() %>% dplyr::group_by(Priority) %>% dplyr::summarize(numProts = n())
+
+
+BMDM_prot_sum <- BMDM_prot_sum %>% dplyr::left_join(BMDM_prot_sumPriority2, by = "Priority")
+BMDM_prot_sum$FacetLab <- ifelse(BMDM_prot_sum$Priority == 3, "High",ifelse(BMDM_prot_sum$Priority == 2, "Medium",ifelse(BMDM_prot_sum$Priority == 1, "Low","NA")))
+
+BMDM_prot_sum$DataCompleteness <- 1 - BMDM_prot_sum$fracMD
+
+BMDM_interPep_bind$FacetLab <- ifelse(BMDM_interPep_bind$Priority == 3, "High",ifelse(BMDM_interPep_bind$Priority == 2, "Medium",ifelse(BMDM_interPep_bind$Priority == 1, "Low","NA")))
+
+protMD <- BMDM_prot_sum %>% filter(FacetLab != "NA") %>% ggplot(aes(DataCompleteness*100, color = factor(Method, levels = c("Shotgun","Prioritization")))) + geom_boxplot() + coord_flip(xlim = c(0,100)) + labs(x = "", color = "", y = "") + theme_box() + theme(legend.position = "null", axis.text.y = element_blank(), axis.title = element_text(size = 26), strip.background = element_rect(fill = "grey95", color = "grey70"), strip.text = element_text(color = "black",size = 20), plot.title = element_text(size = 28)) + ggtitle("Proteins") + facet_wrap(~factor(FacetLab, levels = c("High","Medium","Low","NA")), nrow = 1) + geom_text(aes(x = 2 , y = 0 , label = paste(numProts, "\nproteins")), color = "black",size = 6)  + scale_color_manual(values = c("blue","red"))
+
+peptide_MD <- BMDM_interPep_bind %>% filter(FacetLab != "NA") %>% ggplot(aes(DataCompleteness*100, color = factor(Method, levels = c("Shotgun","Prioritization")))) + geom_boxplot() + coord_flip(xlim = c(0,100)) + labs(x = "% Data Completeness", color = "", y = "") + theme_box() + theme(legend.position = "null", axis.title.y = element_text(size = 30), strip.background = element_rect(fill = "grey95", color = "grey70"), strip.text = element_text(color = "black", size = 20), axis.text.y = element_text(size = 28), plot.title = element_text(size = 28)) + ggtitle("Peptides") + facet_wrap(~factor(FacetLab, levels = c("High","Medium","Low","NA")), nrow = 1) + geom_text(aes(x = 2 , y = 0 , label = paste(num, "\npeptides")), color = "black",size = 6) + scale_color_manual(values = c("blue","red"))
+
+#precursor_MD 
+#peptide_MD
+#protMD
+
+
+fig1Supp_pepMD <- BMDM_interPep_bind %>% group_by(Method,FacetLab) %>% summarize(medVal = median(fracMD, na.rm = TRUE))
+fig1Supp_protMD <- BMDM_prot_sum %>% group_by(Method,FacetLab) %>% summarize(medVal = median(fracMD, na.rm = TRUE))
+
+peptide_MD + protMD + plot_annotation(title = 'BMDMs: Missing Data per Cell',theme = theme(plot.title = element_text(size = 28))) + plot_layout(guides = "collect",widths = c(1,1)) & theme(legend.position = 'null')
+ggsave(paste0(FigOut,"BMDM_missingData_v2_mrri02.pdf"), width = 9 , height = 7, units = "in")
+```
+
+```{r}
+BMDM_MDp.s <- BMDM_MDp %>% dplyr::select(any_of(BMDM_CG.s$id))
+BMDM_MDp.p <- BMDM_MDp %>% dplyr::select(any_of(BMDM_CG.p$id))
+
+BMDM_MDp.s.m <- melt(BMDM_MDp.s)
+BMDM_MDp.p.m <- melt(BMDM_MDp.p)
+
+BMDM_MDp.s.m$Method <- "Shotgun"
+BMDM_MDp.p.m$Method <- "Prioritization"
+
+BMDM_MDp.s.m <- BMDM_MDp.s.m %>% dplyr::filter(variable %in% BMDM_CG.s$id)
+BMDM_MDp.p.m <- BMDM_MDp.p.m %>% dplyr::filter(variable %in% BMDM_CG.p$id)
+
+BMDM_MDp.join <- rbind(BMDM_MDp.s.m,BMDM_MDp.p.m)
+BMDM_MDp.join_sum <- BMDM_MDp.join %>% dplyr::group_by(variable, Method) %>% dplyr::summarize("Proteins/cell"=sum(!is.na(value))) 
+
+protsPerCell <- BMDM_MDp.join_sum %>% ggplot(aes(x = `Proteins/cell`, color = factor(Method, levels = c("Shotgun","Prioritization")))) + geom_boxplot() + coord_flip(xlim = c(0,800)) + theme_box() + theme(legend.position = "bottom", axis.title.y = element_text(size = 30), axis.text.y = element_text(size = 28)) + labs(color = "") + scale_color_manual(values = c("blue","red"))
+
+BMDM_t0.s.m_pepSum$Method <- "Shotgun"
+BMDM_t0.p.m_pepSum$Method <- "Prioritization"
+
+BMDM_pep.join <- rbind(BMDM_t0.s.m_pepSum,BMDM_t0.p.m_pepSum)
+BMDM_pep.join_sum <- BMDM_pep.join %>% dplyr::group_by(variable, Method) %>% dplyr::summarize("Peptides/cell"=sum(!is.na(Val2))) 
+
+pepsPerCell <- BMDM_pep.join_sum %>% ggplot(aes(x = `Peptides/cell`, color = factor(Method, levels = c("Shotgun","Prioritization")))) + geom_boxplot() + coord_flip(xlim = c(0,2200)) + theme_box() + theme(legend.position = "bottom",axis.title.y = element_text(size = 30), axis.text.y = element_text(size = 28)) + labs(color = "") + scale_color_manual(values = c("blue","red"))
+
+fig1Supp2_protCov <- BMDM_MDp.join_sum %>% group_by(Method) %>% summarize(medVal = median(`Proteins/cell`, na.rm = TRUE))
+fig1Supp2_pepCov <- BMDM_pep.join_sum %>% group_by(Method) %>% summarize(medVal = median(`Peptides/cell`, na.rm = TRUE))
+
+pepsPerCell + protsPerCell + plot_annotation(title = 'BMDMs: Data Points per Cell',theme = theme(plot.title = element_text(size = 28))) + plot_layout(guides = "collect",widths = c(1,1)) & theme(legend.position = 'null')  
+ggsave(paste0(FigOut,"BMDM_DataPointsPerCell_mrri02.pdf"), width = 7, height = 7, units = "in")
+
+```
+
+```{r}
+#For precursors with higher fill times, were these identified in more runs?
+BMDM_tList_4FT_1 <- read.delim(paste0(DataPath,"tLists/CEO_TargList_081021_2.txt"))
+BMDM_tList_4FT_1 <- BMDM_tList_4FT_1 %>% dplyr::filter(TargBool == TRUE)
+BMDM_tList_4FT <- BMDM_tList_4FT_1 %>% dplyr::filter(FT_priority > 500)
+
+#BMDM_ev.s <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_BMDM_PIF50_limFASTA_ShotgunOnly.txt"))
+#BMDM_ev.p <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_BMDM_PIF50_limFASTA_pSCoPEOnly.txt"))
+BMDM_ev <- read.delim(paste0(DataPath,"technicalfigs_BMDM/ev_20Shotgun20pSCoPE_02182022_mrri02_PIF50_DART_1pFDR.txt"))
+
+#BMDM_ev.s <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_Shot_20_PIF50.txt"))
+#BMDM_ev.p <- read.delim(paste0(BMDM_basePath,"evidence_filtBio_pSCoPE_20_PIF50.txt"))
+
+BMDM_t0.s.m_FT <- BMDM_t0.s.m %>% dplyr::filter(SeqCharge %in% BMDM_tList_4FT$SeqCharge)
+BMDM_t0.p.m_FT <- BMDM_t0.p.m %>% dplyr::filter(SeqCharge %in% BMDM_tList_4FT$SeqCharge)
+
+interFT <- intersect(BMDM_t0.s.m_FT$SeqCharge,BMDM_t0.p.m_FT$SeqCharge)
+interFTdf <- as.data.frame(interFT)
+interFTdf$peptides <- str_sub(interFTdf$interFT, end = -2)
+
+BMDM_t0.s.m_FT_inter <- BMDM_t0.s.m_FT %>% dplyr::filter(SeqCharge %in% interFT)
+BMDM_t0.p.m_FT_inter <- BMDM_t0.p.m_FT %>% dplyr::filter(SeqCharge %in% interFT)
+
+BMDM_t0.s.m_FT_inter_sum <- BMDM_t0.s.m_FT_inter %>% dplyr::group_by(variable) %>% dplyr::summarize(fracMissing = sum(is.na(value))/n()) %>% dplyr::mutate(Method = "Shotgun")
+BMDM_t0.p.m_FT_inter_sum <- BMDM_t0.p.m_FT_inter %>% dplyr::group_by(variable) %>% dplyr::summarize(fracMissing = sum(is.na(value))/n()) %>% dplyr::mutate(Method = "Prioritization")
+
+FT_bind <- rbind(BMDM_t0.s.m_FT_inter_sum,BMDM_t0.p.m_FT_inter_sum)
+FT_bind$DataCompleteness <- 1 - FT_bind$fracMissing
+MDhist <- FT_bind %>% ggplot(aes(DataCompleteness*100, color = factor(Method, levels = c("Shotgun","Prioritization")))) + geom_boxplot() + coord_flip(xlim = c(0, 100)) + theme_box() + labs(x = "% Data Completeness, Peptides", y = "") + geom_text(aes(y = 0, x = 1, label = paste0(length(unique(interFTdf$peptides)), " peptides")), color = "black",size = 8)+ theme(legend.position ="null",axis.title.y = element_text(size = 30), axis.text.y = element_text(size = 28)) + scale_color_manual(values = c("blue","red"))
+
+# Showing abundance
+pSCoPE_evi_4FT <- read.delim(paste0(DataPath,"technicalfigs_BMDM/ev_20Shotgun20pSCoPE_02182022_mrri02_PIF50_DART_1pFDR.txt"))
+pSCoPE_evi_4FT$SeqCharge <- paste0(pSCoPE_evi_4FT$Modified.sequence,pSCoPE_evi_4FT$Charge)
+pSCoPE_evi_4FT_join <- pSCoPE_evi_4FT %>% left_join(BMDM_tList_4FT_1, by = "SeqCharge")
+#MDhist <- pSCoPE_evi_4FT_join %>% dplyr::filter(Priority == 3) %>% ggplot(aes(log10(Intensity.x), fill = factor(FT_priority))) + geom_boxplot(position = position_dodge()) + coord_flip()+ theme(legend.position ="null")
+
+BMDM_tList_4FT_quartiles <- quantile(BMDM_tList_4FT_1$Intensity, c(.33,.66))
+
+BMDM_tList_4FT_1_2 <- BMDM_tList_4FT_1
+BMDM_tList_4FT_1_2$TertileColor <- ifelse(BMDM_tList_4FT_1_2$Intensity <= BMDM_tList_4FT_quartiles[1],"1000ms",ifelse((BMDM_tList_4FT_1_2$Intensity > BMDM_tList_4FT_quartiles[1])&(BMDM_tList_4FT_1_2$Intensity <= BMDM_tList_4FT_quartiles[2]),"750ms","500ms"))
+
+intHist <- BMDM_tList_4FT_1_2 %>% dplyr::filter(Priority %in% c(3,2,1)) %>% ggplot(aes(log10(Intensity), fill = factor(TertileColor, levels = c("500ms","750ms","1000ms")))) + geom_histogram(alpha = 0.9, bins = 100) + coord_flip() + theme_light() + geom_vline(aes(xintercept = log10(BMDM_tList_4FT_quartiles[1]))) + geom_vline(aes(xintercept = log10(BMDM_tList_4FT_quartiles[2]))) + scale_fill_manual(values = c("paleturquoise1","paleturquoise3","paleturquoise4")) + theme_box() + 
+  theme(legend.position=c(.65,.20),axis.title.y = element_text(size = 30), axis.text.y = element_text(size = 28)) + labs(y = "", x = bquote("Intensity, Log"[10]), fill = "Fill time")
+
+fig1Supp2_FillTimeSet<- FT_bind %>% group_by(Method) %>% summarize(medVal = median(fracMissing, na.rm = TRUE))
+
+library(patchwork)
+intHist + MDhist + plot_annotation(title = 'Intensity-dependent MS2 Fill Times',theme = theme(plot.title = element_text(size = 28)))
+ggsave(paste0(FigOut,"BMDM_IncreasedFillTimes_mrri02.pdf"), width = 7, height = 7, units = "in")
+```
+
+# Pub Stats
+```{r}
+#fig1Supp_pepMD
+#fig1Supp_protMD
+#fig1Supp2_protCov
+#fig1Supp2_pepCov
+#fig1Supp2_FillTimeSet
+
+
+# Missing data stats
+fig1Supp_pepMD_Shotgun <- fig1Supp_pepMD %>% filter(Method == "Shotgun") %>% ungroup() %>% mutate(Shotgun = medVal) %>% dplyr::select(FacetLab, Shotgun)
+fig1Supp_pepMD_Prioritized <- fig1Supp_pepMD %>% filter(Method == "Prioritization") %>% ungroup() %>% mutate(Prioritization = medVal) %>% dplyr::select(FacetLab, Prioritization)
+fig1Supp_pepMD.join <- fig1Supp_pepMD_Shotgun %>% left_join(fig1Supp_pepMD_Prioritized, by = "FacetLab") %>% mutate(Fig = "fig1Supp_PeptideMD")
+
+fig1Supp_protMD_Shotgun <- fig1Supp_protMD %>% filter(Method == "Shotgun") %>% ungroup() %>% mutate(Shotgun = medVal) %>% dplyr::select(FacetLab, Shotgun)
+fig1Supp_protMD_Prioritized <- fig1Supp_protMD %>% filter(Method == "Prioritization") %>% ungroup() %>% mutate(Prioritization = medVal) %>% dplyr::select(FacetLab, Prioritization)
+fig1Supp_protMD.join <- fig1Supp_protMD_Shotgun %>% left_join(fig1Supp_protMD_Prioritized, by = "FacetLab") %>% mutate(Fig = "fig1Supp_ProtMD")
+
+fig1Supp_MDjoin <- rbind(fig1Supp_pepMD.join,fig1Supp_protMD.join)
+
+# Coverage stats
+fig1Supp2_pepCov_Shotgun <- fig1Supp2_pepCov %>% filter(Method == "Shotgun") %>% ungroup() %>% mutate(Shotgun = medVal) %>% dplyr::select(Shotgun) %>% mutate(Fig = "fig1Supp_pepCov")
+fig1Supp2_pepCov_Prioritized <- fig1Supp2_pepCov %>% filter(Method == "Prioritization") %>% ungroup() %>% mutate(Prioritization = medVal) %>% dplyr::select(Prioritization)  %>% mutate(Fig = "fig1Supp_pepCov")
+fig1Supp2_pepCov.join <- fig1Supp2_pepCov_Shotgun %>% left_join(fig1Supp2_pepCov_Prioritized, by = "Fig")
+
+fig1Supp2_protCov_Shotgun <- fig1Supp2_protCov %>% filter(Method == "Shotgun") %>% ungroup() %>% mutate(Shotgun = medVal) %>% dplyr::select(Shotgun) %>% mutate(Fig = "fig1Supp_protCov")
+fig1Supp2_protCov_Prioritized <- fig1Supp2_protCov %>% filter(Method == "Prioritization") %>% ungroup() %>% mutate(Prioritization = medVal) %>% dplyr::select(Prioritization)  %>% mutate(Fig = "fig1Supp_protCov")
+fig1Supp2_protCov.join <- fig1Supp2_protCov_Shotgun %>% left_join(fig1Supp2_protCov_Prioritized, by = "Fig")
+
+fig1Supp2_Cov.join <- rbind(fig1Supp2_pepCov.join, fig1Supp2_protCov.join)
+
+# Intensity-dependent-fill-time stats
+fig1Supp2_FillTimeSet_Shotgun <- fig1Supp2_FillTimeSet %>% filter(Method == "Shotgun") %>% ungroup() %>% mutate(Shotgun = medVal) %>% dplyr::select(Shotgun) %>% mutate(Fig = "fig1Supp_FT")
+fig1Supp2_FillTimeSet_Prioritized <- fig1Supp2_FillTimeSet %>% filter(Method == "Prioritization") %>% ungroup() %>% mutate(Prioritization = medVal) %>% dplyr::select(Prioritization) %>% mutate(Fig = "fig1Supp_FT")
+fig1Supp2_FillTimeSet.join <- fig1Supp2_FillTimeSet_Shotgun %>% left_join(fig1Supp2_FillTimeSet_Prioritized, by = "Fig")
+
+fig1Supp_MDjoin$PercentageChange <- ((fig1Supp_MDjoin$Prioritization - fig1Supp_MDjoin$Shotgun)/fig1Supp_MDjoin$Shotgun)*100
+fig1Supp2_Cov.join$PercentageChange <- ((fig1Supp2_Cov.join$Prioritization - fig1Supp2_Cov.join$Shotgun)/fig1Supp2_Cov.join$Shotgun)*100 
+fig1Supp2_FillTimeSet.join$PercentageChange <- ((fig1Supp2_FillTimeSet.join$Prioritization - fig1Supp2_FillTimeSet.join$Shotgun)/fig1Supp2_FillTimeSet.join$Shotgun)*100 
+```
