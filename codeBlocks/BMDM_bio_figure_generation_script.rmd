@@ -969,3 +969,18 @@ ggsave(paste0(figOut,"unimp_PCA_celltype_header.pdf"), width = 5.5, height = 5.5
 ggsave(paste0(figOut,"unimp_PCA_PSEA_footer_select.pdf"), width = 5.5, height = 3.75, units = "in")
 ```
 
+```{r Missing data PCA}
+
+t0.m <- melt(t0_mat, id.vars = "SeqCharge")
+t0.m_sum <- t0.m %>% group_by(variable) %>% summarize(fracMD = sum(is.na(value))/n())
+
+PCAout_both_coords_MDsupp <- as.data.frame(PCAout_both_coords[,1:2])
+PCAout_both_coords_MDsupp$id <- row.names(PCAout_both_coords_MDsupp)
+
+t0_pca <- PCAout_both_coords_MDsupp %>% left_join(t0.m_sum, by = c("id" = "variable"))
+t0_pca$Completeness <- (1-t0_pca$fracMD)*100
+
+MD_pca <- t0_pca %>% ggplot(aes(x = PC1, y = PC2, color = Completeness)) + geom_point( size = 5, alpha = 0.7,shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 25) + theme_light() + labs(color = "Precursor-level\ndata completeness, %")  + theme(legend.position = "bottom")  + theme(legend.position = "bottom",legend.title = element_text(size = 14),legend.text = element_text(size = 14), axis.text = element_text(size = 18),axis.title = element_text(size = 24)) + labs(x = "PC1", y = "PC2")
+ggsave(paste0(figOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
+
+```
