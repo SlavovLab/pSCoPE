@@ -261,7 +261,7 @@ GeneMappings_single2 <- GeneMappings_single %>% select(-X)
 #write.table(NT_PSEA,paste0(datOut,"NT_only_PCAPSEA.txt"))
 
 # Load PC-weight-based PSEA results
-xcond2 <- read.table(paste0(datPath,"xCond2.txt"))
+xcond_PSEA <- read.table(paste0(datPath,"xCond2.txt"))
 LPS_PSEA <- read.table(paste0(datPath,"LPS_only_PCAPSEA.txt"))
 NT_PSEA <- read.table(paste0(datPath,"NT_only_PCAPSEA.txt"))
 ```
@@ -276,7 +276,7 @@ Cc_excludeList <- c("viral infectious cycle","viral transcription","melanosome",
 
 
 # q value correction and FDR filtration of PSEA results
-xcond.f <- xcond2 %>% filter(!is.na(pVal))
+xcond.f <- xcond_PSEA %>% filter(!is.na(pVal))
 xcond.f$qVal <- p.adjust(xcond.f$pVal, method = "fdr")
 xcond.f_fdr <- xcond.f %>% filter((qVal <= .05)& !(Process %in% XC_excludeList))
 
