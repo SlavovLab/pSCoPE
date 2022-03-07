@@ -140,7 +140,60 @@ getCorrection <- function(log){
   return(log_corrections)
 }
 
+PCA_PSEA_PDAC_prot <- function(PCA_weights, GeneSetDB){
+GeneSetDB <- GeneSetDB %>% filter(!is.na(GO_term_name))
+GO_terms <- unique(GeneSetDB$GO_term_name)
 
+WRS_test_out <- data.frame(Process = character(),numDBentries = numeric(),numberMatchingEntries = numeric(),fracDB = numeric(),pVal = numeric(),EffectSize = numeric(),PC = numeric(),Association = numeric(), stringsAsFactors = FALSE)
+WRS_test_out_full <- data.frame(Process = character(),numDBentries = numeric(),numberMatchingEntries = character(),fracDB = numeric(),pVal = numeric(),EffectSize = numeric(),PC = numeric(),Association = numeric(), stringsAsFactors = FALSE)
+
+ReqNumEntry <- 15
+fracDB <- .1
+maxNum <- 200
+
+GO_in <- PCA_weights 
+
+for(i in 1:(ncol(GO_in)-1)){
+  GeneInd <- which(colnames(GO_in) == "Proteins")
+  GO_in_lim <- GO_in[,c(i,GeneInd)]
+  
+for(j in 1:(length(GO_terms))){
+
+    GO_term <- GeneSetDB %>% dplyr::filter(GO_term_name == GO_terms[[j]])
+    GO_term <- GO_term %>% group_by(Uniprot) %>% slice(1)
+    
+    GO_in_lim$Lab <- ifelse(GO_in_lim$Proteins %in% GO_term$Uniprot,"Target","Background")
+    colnames(GO_in_lim) <- c("Loadings","Proteins","Lab")
+    WRS_test_out[j,1] <- GO_terms[[j]]
+    WRS_test_out[j,2] <- length(unique(GO_term$Gene))
+    WRS_test_out[j,3] <- sum(GO_in_lim$Lab == "Target")
+    WRS_test_out[j,4] <- WRS_test_out[j,3]/WRS_test_out[j,2]
+    WRS_test_out[j,7] <- i
+ 
+    
+    if((sum(GO_in_lim$Lab == "Target") >= ReqNumEntry)&(WRS_test_out[j,4] >= fracDB)&(WRS_test_out[j,2] <= maxNum)){
+      GO_in_lim2 <- GO_in_lim
+      GO_in_lim2$zScore <- (GO_in_lim2$Loadings-mean(GO_in_lim2$Loadings, na.rm=TRUE))/sd(GO_in_lim2$Loadings, na.rm=TRUE)
+      
+      TargGroup <- GO_in_lim2 %>% dplyr::filter(Lab == "Target")
+      BackgroundGroup <- GO_in_lim2 %>% dplyr::filter(Lab != "Target")
+      
+      WRSTest <- wilcox.test(TargGroup$Loadings, BackgroundGroup$Loadings, alternative = "two.sided", paired = FALSE, exact = FALSE)
+      WRS_test_out[j,5] <- WRSTest$p.value
+      WRS_test_out[j,6] <- median(GO_in_lim2[GO_in_lim2$Lab == "Target",4], na.rm = TRUE)/median(GO_in_lim2[GO_in_lim2$Lab != "Target",4], na.rm = TRUE)
+      WRS_test_out[j,8] <- median(GO_in_lim2[GO_in_lim2$Lab == "Target",4], na.rm = TRUE)
+
+    }
+    if((sum(GO_in_lim$Lab == "Target") < ReqNumEntry)|(WRS_test_out[j,4] < fracDB)|(WRS_test_out[j,2] > maxNum)){
+      WRS_test_out[j,5] <- NA
+      WRS_test_out[j,6] <- NA
+      WRS_test_out[j,8] <- NA
+    }
+    }
+  WRS_test_out_full <- rbind(WRS_test_out_full,WRS_test_out)
+}
+return(WRS_test_out_full)
+}
 ```
 
 ```{r}
@@ -204,6 +257,9 @@ DataPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/Pub/Data_Share/FigureGen/"
 
 ShotgunSet <- c("wAL00295","wAL00296","wAL00297","wAL00298","wAL00299","wAL00300")
 
+###
+# Your paths here
+###
 FigOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT_PDAC2/"
 datOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT_PDAC2/"
 
@@ -1200,3 +1256,110 @@ fig1Supp_MDjoin$PercentageChange <- ((fig1Supp_MDjoin$Prioritization - fig1Supp_
 fig1Supp2_Cov.join$PercentageChange <- ((fig1Supp2_Cov.join$Prioritization - fig1Supp2_Cov.join$Shotgun)/fig1Supp2_Cov.join$Shotgun)*100 
 fig1Supp2_FillTimeSet.join$PercentageChange <- ((fig1Supp2_FillTimeSet.join$Prioritization - fig1Supp2_FillTimeSet.join$Shotgun)/fig1Supp2_FillTimeSet.join$Shotgun)*100 
 ```
+
+```{r}
+###
+# Fig 1d: PCA plots for PDAC cell type and Protein-set color-coding
+###
+
+CG <- read.delim(paste0(DataPath,"technicalfigs_PDAC/Coverage/","ChanKey_PDAC_coverage_PIF50_mrri10.txt"))
+BC_data <- read.csv(paste0(DataPath,"technicalfigs_PDAC/Coverage/","limmaCorrected_normed_prePCA_PDAC_cov_PIF50_mrri10.csv"))
+
+CG$cellLab <- ifelse(CG$celltype == "Bx","BxPC-3",ifelse(CG$celltype == "HPAF","HPAF-II",ifelse(CG$celltype == "CPAC","CFPAC-I","control")))
+pSCoPE_cov <- c("XwAL00120","XwAL00121","XwAL00122","XwAL00123","XwAL00124","XwAL00125","XwAL00126","XwAL00127","XwAL00129","XwAL00130")
+CG_prioritized <- CG %>% filter(Raw.file %in% pSCoPE_cov)
+
+
+row.names(BC_data) <- BC_data$X
+BC_data_preMat <- BC_data %>% select(-X)
+BC_data_preMat <- BC_data %>% select(any_of(CG_prioritized$id))
+BC_data.mat <- as.matrix(BC_data_preMat)
+PDAC_PC_out <- prcomp(t(BC_data.mat), scale = TRUE, center = TRUE)
+PDAC_PC_coord <- as.data.frame(PDAC_PC_out$x[,1:6])
+PDAC_PC_weights <- as.data.frame(PDAC_PC_out$rotation[,1:5])
+PDAC_PC_weights$Proteins <- row.names(PDAC_PC_weights)
+
+PCAsummary<- summary(PDAC_PC_out)
+PC1_fracVar <- PCAsummary$importance[2,1]
+PC2_fracVar <- PCAsummary$importance[2,2]
+PDAC_PC_coord$id <- row.names(PDAC_PC_coord)
+PDAC_PC_coord.anno <- PDAC_PC_coord %>% left_join(CG, by = "id")
+Okabe_Ito <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000")
+
+cellType_PDAC_PCA <- PDAC_PC_coord.anno %>% ggplot(aes(x = PC1, y = PC2, color = cellLab)) + geom_point(shape =16,size = 5, alpha = 0.50) + theme_light() +labs(color = "", x = paste0("PC1 (",round(PC1_fracVar,2)*100,"%)"), y = paste0("PC2 (",round(PC2_fracVar,2)*100,"%)")) + scale_color_manual(values = c(Okabe_Ito[1],Okabe_Ito[2],Okabe_Ito[3])) + 
+  geom_text(aes(x = 0, y = 14),size = 8,color = Okabe_Ito[3],label = "HPAF-II") + 
+  geom_text(aes(x = 18, y = 0),size = 8,color = Okabe_Ito[2],label = "CFPAC-I") + 
+  geom_text(aes(x = -14, y = 0),size = 8,color = Okabe_Ito[1],label = "BxPC-3") + theme(legend.position = "null",axis.title = element_text(size = 24), axis.text = element_text(size = 20)) 
+
+ProtMissing <- read.delim(paste0(singleCellDir,"Prot_missing_PDAC_consist_PIF50_mrri10.txt"))
+BC_dat <- read.csv(paste0(singleCellDir,"limmaCorrected_normed_prePCA_PDAC_PIF50_mrri10.csv"))
+
+ProtMissing.m <- melt(ProtMissing)
+BC_dat.m <- melt(BC_dat, by = "X")
+colnames(BC_dat.m) <- c("Proteins","variable","value")
+BC_dat.m <- BC_dat.m %>% left_join(ProtMissing.m, by = c("Proteins", "variable"))
+BC_dat.m$newVar <- ifelse(is.na(BC_dat.m$value.y),NA,BC_dat.m$value.x)
+BC_dat.m2 <- BC_dat.m %>% select(Proteins,variable,newVar)
+
+PSEA_Terms_to_keep <- c("interferon-gamma-mediated signaling pathway","protein N-linked glycosylation via asparagine","de novo' posttranslational protein folding","protein polyubiquitination","regulation of cellular amino acid metabolic process","DNA damage response, signal transduction by p53 class mediator resulting in cell cycle arrest","cellular nitrogen compound metabolic process","positive regulation of ubiquitin-protein ligase activity involved in mitotic cell cycle","regulation of ubiquitin-protein ligase activity involved in mitotic cell cycle","glycolysis","negative regulation of ubiquitin-protein ligase activity involved in mitotic cell cycle","nucleosome assembly","cellular component movement","double-strand break repair","SRP-dependent cotranslational protein targeting to membrane","chromatin organization","negative regulation of catalytic activity","actin filament binding","regulation of cell shape","respiratory electron transport chain")
+
+for (i in 1:length(PSEA_Terms_to_keep)){
+  GO_db_lim <- GO_db %>% filter(GO_term_name %in% PSEA_Terms_to_keep[i])
+  BC_dat.m2_lim <- BC_dat.m2 %>% filter(Proteins %in% GO_db_lim$Uniprot)
+  BC_dat.m2_lim_sum <- BC_dat.m2_lim %>% dplyr::group_by(variable) %>% dplyr::summarize(medAbund = median(newVar, na.rm = TRUE))
+  BC_dat.m2_lim_sum$medAbund <- (BC_dat.m2_lim_sum$medAbund-mean(BC_dat.m2_lim_sum$medAbund, na.rm=TRUE))/sd(BC_dat.m2_lim_sum$medAbund, na.rm=TRUE)
+  BC_dat.m2_lim_sum$medAbund <- ifelse(BC_dat.m2_lim_sum$medAbund >= 2,2,ifelse(BC_dat.m2_lim_sum$medAbund <= -2,-2,BC_dat.m2_lim_sum$medAbund))
+  colnames(BC_dat.m2_lim_sum) <- c("id",as.character(PSEA_Terms_to_keep[[i]]))
+  if(i == 1){
+    GSEA_PC_out <- BC_dat.m2_lim_sum
+  }
+  if(i > 1){
+    GSEA_PC_out <- GSEA_PC_out %>% left_join(BC_dat.m2_lim_sum, by = "id")
+  }
+}
+
+IFNg_PDAC <- PDAC_PC_coord2.pSCoPE %>% ggplot(aes(x = PC1,y = PC2, color = `interferon-gamma-mediated signaling pathway`)) + geom_point(shape =16,size = 5, alpha = 0.75) + theme_light() +labs(color = "") + scale_color_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) + labs(color = "") + theme(axis.title = element_blank(),axis.text = element_blank(), legend.position = "null") + ggtitle("IFNg signaling")
+
+
+Glycolysis_PDAC <- PDAC_PC_coord2.pSCoPE %>% ggplot(aes(x = PC1,y = PC2, color = `glycolysis`)) + geom_point(shape =16,size = 5, alpha = 0.75) + theme_light() +labs(color = "") + scale_color_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) + labs(color = "") + theme(axis.title = element_blank(),axis.text = element_blank(), legend.position = "null") + ggtitle("Glycolysis")
+
+
+deNovo_PDAC <- PDAC_PC_coord2.pSCoPE %>% ggplot(aes(x = PC1,y = PC2, color = `de novo' posttranslational protein folding`)) + geom_point(shape =16,size = 5, alpha = 0.75) + theme_light() +labs(color = "") + scale_color_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) + labs(color = "") + theme(axis.title = element_blank(),axis.text = element_blank(), legend.position = "null") + ggtitle("De novo post-translational protein folding")
+
+cellType_PDAC_PCA +  IFNg_PDAC + Glycolysis_PDAC + deNovo_PDAC + plot_layout(nrow = 1)
+ggsave(paste0(FigOut,"PDAC_PCA_composite.pdf"), width = 16, height = 5, units = "in") 
+```
+
+```{r}
+###
+# PC-based PSEA applied to pSCoPE PDAC sets from Fig 1b
+###
+
+GOPath <- "biofigs_BMDM/"
+GO_DB_Path <- paste0(DataPath,GOPath,"GOA_db.txt")
+GO_db <- read.delim(GO_DB_Path, sep = "", header = TRUE)
+GO_db.2 <- GO_db %>% filter(Letter != "C")
+
+PDAC_PSEA <- PCA_PSEA_PDAC_prot(PDAC_PC_weights,GO_db.2)
+
+PDAC_PSEA.f <- PDAC_PSEA %>% filter(!is.na(pVal),PC <= 4)
+PDAC_PSEA.f$qVal <- p.adjust(PDAC_PSEA.f$pVal, method = "fdr")
+PDAC_PSEA.f_fdr <- PDAC_PSEA.f %>% filter((qVal <= .05))
+PDAC_PSEA.f_fdr$neglogq <- -log10(PDAC_PSEA.f_fdr$qVal)
+PDAC_PSEA.f_fdr$neglogq_bin <- ifelse(PDAC_PSEA.f_fdr$neglogq >=3,3,PDAC_PSEA.f_fdr$neglogq)
+
+# Limited protein set presentation
+PDAC_PSEA.f_fdr %>% filter(Process %in% Terms_to_keep2) %>% ggplot(aes(x = PC, y = str_wrap(Process, width = 50),fill = round(Association,1), size = neglogq_bin)) + geom_point(shape = 21, stroke = 1) + scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, breaks = c(-1,0,1)) + theme_light() + labs(fill = "Loading\nz-score",x = "Principal component",y = "", size = bquote("-log"[10]~"(q val)")) + theme(axis.text.y = element_text(size = 16),axis.text.x = element_text(size = 26),axis.title = element_text(size = 30), legend.title = element_text(size = 20), legend.text = element_text(size = 15), legend.position = "bottom", legend.box="vertical", legend.margin=margin()) +
+  scale_size_continuous(breaks = seq(2,3,1),range=c(1,15),
+                  limits = c(0, 4), labels = c("2",">3")) +  scale_x_discrete(limits = c("1",
+     "2","3","4"), expand=c(0.1, 0)) 
+ggsave(paste0(FigOut,"PSEA_PDAC_Coverage_pSCoPE_only.png"), width = 10, height = 15, units = "in")
+
+# Full protein set presentation
+PDAC_PSEA.f_fdr  %>% ggplot(aes(x = PC, y = str_wrap(Process, width = 50),fill = round(Association,1), size = neglogq_bin)) + geom_point(shape = 21, stroke = 1) + scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, breaks = c(-1,0,1)) + theme_light() + labs(fill = "Loading\nz-score",x = "Principal component",y = "", size = bquote("-log"[10]~"(q val)")) + theme(axis.text.y = element_text(size = 16),axis.text.x = element_text(size = 26),axis.title = element_text(size = 30), legend.title = element_text(size = 20), legend.text = element_text(size = 15), legend.position = "bottom", legend.box="vertical", legend.margin=margin()) +
+  scale_size_continuous(breaks = seq(2,3,1),range=c(1,15),
+                  limits = c(0, 4), labels = c("2",">3")) +  scale_x_discrete(limits = c("1",
+     "2","3","4"), expand=c(0.1, 0)) 
+ggsave(paste0(FigOut,"PSEA_PDAC_Coverage_pSCoPE_only_fullPS.png"), width = 10, height = 15, units = "in")
+```
+
