@@ -173,16 +173,14 @@ CorPermutation <- function(df,CodingDoc,dbString){
 #orig datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/dat/"
 datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/Pub/Data_Share/FigureGen/biofigs_BMDM/"
 
-#orig prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori40_DART.csv"),row.names = "X")
-prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori_mrri02_PIF50_DART_1pFDR.csv"),row.names = "X")
+#Precursor-level
+t0_mat <- read.delim(paste0(datPath, "t0_BMDM_priori_mrri02_PIF50_DART_1pFDR.txt"))
 
-#orig CG <- read.delim(paste0(datPath, "ChanKey_BMDM_Priori.txt"))
-#orig GeneMappings_single <- read.csv("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/BatchCorrection_examination/GeneMappings.csv")
+prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori_mrri02_PIF50_DART_1pFDR.csv"),row.names = "X")
 
 CG <- read.delim(paste0(datPath, "ChanKey_BMDM_Priori_mrri02_PIF50_DART_FDR1p.txt"))
 GeneMappings_single <- read.csv(paste0(datPath,"GeneMappings.csv"))
 
-#orig ProtMissing <- read.delim(paste0(datPath,"Prot_missing_BMDM.txt"))
 ProtMissing <- read.delim(paste0(datPath,"Prot_missing_BMDM_priori_mrri02_PIF50_DART_1pFDR.txt"))
 
 GO_DB_Path <- paste0(datPath,"GOA_db.txt")
@@ -201,13 +199,9 @@ BulkDDARatioSet <- read.delim(paste0(datPath,"BulkRatioEvidence.txt"))
 # pre-digestion labeled bulk sample for MEROPS analysis
 DIA_Bulk <- read.delim(paste0(datPath,"GHRT_eGH692_Report.xls"))
 
+figOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT/"
+datOut <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/figs/TEST_SCRIPT_OUT/"
 
-#**********
-# Enter your preferred figure and data output paths
-#**********
-figOut <- "~/TEST_SCRIPT_OUT/"
-datOut <- "~/TEST_SCRIPT_OUT/"
-#**********
 
 ```
 
@@ -969,7 +963,7 @@ ggsave(paste0(figOut,"unimp_PCA_celltype_header.pdf"), width = 5.5, height = 5.5
 ggsave(paste0(figOut,"unimp_PCA_PSEA_footer_select.pdf"), width = 5.5, height = 3.75, units = "in")
 ```
 
-```{r Missing data PCA}
+```{r Missing data PCA: precursor-level}
 
 t0.m <- melt(t0_mat, id.vars = "SeqCharge")
 t0.m_sum <- t0.m %>% group_by(variable) %>% summarize(fracMD = sum(is.na(value))/n())
@@ -981,6 +975,24 @@ t0_pca <- PCAout_both_coords_MDsupp %>% left_join(t0.m_sum, by = c("id" = "varia
 t0_pca$Completeness <- (1-t0_pca$fracMD)*100
 
 MD_pca <- t0_pca %>% ggplot(aes(x = PC1, y = PC2, color = Completeness)) + geom_point( size = 5, alpha = 0.7,shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 25) + theme_light() + labs(color = "Precursor-level\ndata completeness, %")  + theme(legend.position = "bottom")  + theme(legend.position = "bottom",legend.title = element_text(size = 14),legend.text = element_text(size = 14), axis.text = element_text(size = 18),axis.title = element_text(size = 24)) + labs(x = "PC1", y = "PC2")
+#ggsave(paste0(figOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 8, units = "in")
+ggsave(paste0("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/Figs/v2_figs/SupplementalFigs/","DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
+```
+
+```{r Missing data PCA: precursor-level}
+
+PMD.m <- melt(ProtMissing, id.vars = "Proteins")
+PMD.m_sum <- PD.m %>% group_by(variable) %>% summarize(fracMD = sum(is.na(value))/n())
+
+PCAout_both_coords_MDsupp <- as.data.frame(PCAout_both_coords[,1:2])
+PCAout_both_coords_MDsupp$id <- row.names(PCAout_both_coords_MDsupp)
+
+MD_pca <- PCAout_both_coords_MDsupp %>% left_join(PMD.m_sum, by = c("id" = "variable"))
+MD_pca$Completeness <- (1-MD_pca$fracMD)*100
+
+medMD <- mean(MD_pca$Completeness)
+
+MD_pca_plot <- MD_pca %>% ggplot(aes(x = PC1, y = PC2, color = Completeness)) + geom_point( size = 5, alpha = 0.7,shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 40, breaks = c(20,40,60)) + theme_light() + labs(color = "Protein-level\ndata completeness, %")  + theme(legend.position = "bottom")  + theme(legend.position = "bottom",legend.title = element_text(size = 14),legend.text = element_text(size = 14), axis.text = element_text(size = 18),axis.title = element_text(size = 24)) + labs(x = "PC1", y = "PC2")
 ggsave(paste0(figOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
 
 ```
