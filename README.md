@@ -8,8 +8,9 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 * [Website](https://scp.slavovlab.net/pSCoPE)
 * [Running](#running)
 * [Download data](https://scp.slavovlab.net/Huffman_et_al_2022)
+<!--
 * [Preprint](https://www.biorxiv.org/content/10.1101/665307v3)
-
+-->
 
 
 ![workflow](Workflow_v7.png)
