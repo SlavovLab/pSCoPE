@@ -25,7 +25,10 @@ The code blocks in this repository for figure generation and inclusion list gene
 
 ### Running
 
-Each thematic part of the SCoPE2_analysis.R script is bounded by an R "region". These can be minimized when not in use. You will need to create "figs","dat", and "code" sub-directories.
+#### Publication figure generation
+The minimal data needed for figure generation is available by following the "Download data" link above and downloading the figure_data.zip directory.
+
+The publication figures can be generated at one time via the , or the technical and biological figures can be generated separately by running either the PDAC_BMDM_technical_figure_generation_script.rmd file or the BMDM_bio_figure_generation_script.rmd file, respectively.
 
 ------------
 
