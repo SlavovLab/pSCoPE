@@ -12,7 +12,7 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 
 
 
-![workflow](Workflow_v6.png)
+![workflow](Workflow_v7.png)
 
 
 
