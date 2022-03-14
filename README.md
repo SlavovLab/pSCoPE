@@ -17,7 +17,7 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 
 
 
-
+Contact the authors by email: [nslavov\{at\}northeastern.edu](mailto:nslavov@northeastern.edu).
 
 ### License
 
@@ -26,3 +26,8 @@ The SCoPE2 code is distributed by an [MIT license](https://github.com/SlavovLab/
 ### Contributing
 
 Please feel free to contribute to this project by opening an issue or pull request.
+
+<!--
+### Data
+All data used for the manuscript is available on [UCSD's MassIVE Repository](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=b15cafc7489147e99b93bd7c718388b2)
+-->
