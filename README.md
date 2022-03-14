@@ -17,6 +17,7 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 
 
 
+The manuscript is freely available on bioRxiv: <!-- [Specht et al., 2019](https://www.biorxiv.org/content/10.1101/665307v3) -->
 
 Contact the authors by email: [nslavov\{at\}northeastern.edu](mailto:nslavov@northeastern.edu).
 
