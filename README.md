@@ -23,7 +23,7 @@ Contact the authors by email: [nslavov\{at\}northeastern.edu](mailto:nslavov@nor
 
 ### License
 
-The SCoPE2 code is distributed by an [MIT license](https://github.com/SlavovLab/DO-MS/blob/master/LICENSE).
+The pSCoPE code is distributed by an [MIT license](https://github.com/SlavovLab/DO-MS/blob/master/LICENSE).
 
 ### Contributing
 
