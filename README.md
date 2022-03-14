@@ -19,7 +19,7 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 
 [MaxQuant.live (v. 2.1)](www.maxquant.live) contains the prioritization feature applied in the pSCoPE manuscript. This tool is compatible with Thermo orbitrap instruments running Tune v. 2.9 and .Net v. 4.7.2. An automated system compatibility assessment is available on the linked MaxQuant.Live website. 
 
-These code blocks have been tested on R >= 4.0.2, OSX 10.14 / Windows 10. R can be downloaded from the main [R Project page](https://www.r-project.org/) or downloaded with the [RStudio Application](https://www.rstudio.com/products/rstudio/download/). 
+The code blocks in this repository for figure generation and inclusion list generation have been tested on R >= 4.0.2, OSX 10.14 / Windows 10. R can be downloaded from the main [R Project page](https://www.r-project.org/) or downloaded with the [RStudio Application](https://www.rstudio.com/products/rstudio/download/). 
 
 
 
