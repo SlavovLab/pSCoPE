@@ -17,7 +17,7 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 
 ### Requirements
 
-This application has been tested on R >= 3.5.0, OSX 10.14 / Windows 7/8/10. R can be downloaded from the main [R Project page](https://www.r-project.org/) or downloaded with the [RStudio Application](https://www.rstudio.com/products/rstudio/download/). All modules are maintained for MaxQuant >= 1.6.0.16.
+These code blocks have been tested on R >= 4.0.2, OSX 10.14 / Windows 10. R can be downloaded from the main [R Project page](https://www.r-project.org/) or downloaded with the [RStudio Application](https://www.rstudio.com/products/rstudio/download/). 
 
 
 
