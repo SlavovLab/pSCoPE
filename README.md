@@ -30,6 +30,20 @@ The minimal data needed for figure generation is available by following the "Dow
 
 The publication figures can be generated at one time via the , or the technical and biological figures can be generated separately by running either the PDAC_BMDM_technical_figure_generation_script.rmd file or the BMDM_bio_figure_generation_script.rmd file, respectively.
 
+#### Inclusion-list generation
+A prioritized inclusion list can generated from DIA data searched by Spectronaut using the inclusion_list_generation.rmd file.
+
+#### MaxQuant.Live log files
+Information from the MaxQuant.Live log files can be extracted using the MaxQuantLive_Log_Stats_Script.rmd file.
+
+#### Limited FASTA
+The limited FASTA files used for searching prioritized single-cell experiments were generated using the limited_FASTA_generation_script.rmd file.
+
+#### FASTA including MEROPS-annotated peptides
+FASTA files containing MEROPS-annotated proteolytic cleavage products can be generated via the MEROPS_FASTA_generation_script.rmd file.
+
+
+
 ------------
 
 The manuscript is freely available on bioRxiv: <!-- [Specht et al., 2019](https://www.biorxiv.org/content/10.1101/665307v3) -->
