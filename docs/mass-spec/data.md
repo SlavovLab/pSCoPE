@@ -107,7 +107,7 @@ description: "download single-cell proteomics data from pSCoPE, a prioritized SC
 
 <!--&nbsp;-->
 
-* [Processed Data](https://drive.google.com/drive/folders/1NJODxiKrnfW2_nTP-_n_UDvIpwcDEz4C?usp=sharing) from the [second version (v2) of the SCoPE2 preprint](https://www.biorxiv.org/content/10.1101/665307v3)
+<!-- * [Processed Data](https://drive.google.com/drive/folders/1NJODxiKrnfW2_nTP-_n_UDvIpwcDEz4C?usp=sharing) from the [second version (v2) of the SCoPE2 preprint](https://www.biorxiv.org/content/10.1101/665307v3) -->
 
 <!--&nbsp;-->
 
