@@ -49,6 +49,7 @@ description: "download single-cell proteomics data from pSCoPE, a prioritized SC
   - `Peptides` and `Proteins` **x** `single cells` at 1% FDR.  The first 2 columns list the corresponding protein identifiers and peptide sequences and each subsequent column corresponds to a single cell. The quantitation is the Signal-to-noise (S/N) ratio for each single cell's corresponding reporter ion extracted from the RAW file. The single cell identification numbers are [mapped](https://drive.google.com/file/d/1PUfiGhmInYP3JW5Xoul7Tikl9RSHyQcN/view?usp=sharing) to cell type and RAW file. Complete extracted S/N for each RAW file can be found [here](https://drive.google.com/drive/folders/18_BQ15_JQKzbDt1JZo36MaJuOhN3tJCX?usp=sharing).  -->
 
 <h3 style="letter-spacing: 2px; font-size: 26px;" id="processed-single-cell-protein-data" >Benchmarking experiments: Figure 1c/d data</h3>
+
 * [Peptides-raw.csv](https://drive.google.com/file/d/15DwDzAKFuRDTV31EnU83aRRhuAyz85_v/view?usp=sharing)
   - `Peptides` **x** `single cells` at 1% FDR.  The first 2 columns list the corresponding protein identifiers and peptide sequences and each subsequent column corresponds to a single cell. Peptide identification is based on spectra analyzed by [MaxQuant](https://www.maxquant.org/)  and is enhanced by using [DART-ID](https://dart-id.slavovlab.net/) to incorporate retention time information. See [Specht et al., 2019](https://www.biorxiv.org/content/10.1101/665307v3) for details.   
 
@@ -67,6 +68,7 @@ description: "download single-cell proteomics data from pSCoPE, a prioritized SC
 * [sdrf_meta_data.tsv](https://drive.google.com/file/d/1T8BTfNDlYQkBTs8La6YRSCyD1RwNTvqk/view?usp=sharing)
    -  Meta data following the [Sample to Data file format (SDRF) for Proteomics project guidelines](https://github.com/bigbio/proteomics-metadata-standard) for  for all single cells used in analysis constituting all figures.
 
+<h3 style="letter-spacing: 2px; font-size: 26px;" id="processed-single-cell-protein-data" >Bone-marrow-derived macrophage experiments: Figures 2,3, and 4</h3>
 
 &nbsp;
 * [DART-ID input](https://drive.google.com/drive/folders/1ohLco5KHX95jyXIZUAZDvrrbip1RzZ_1?usp=sharing)
