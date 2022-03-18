@@ -170,8 +170,9 @@ CorPermutation <- function(df,CodingDoc,dbString){
 
 ```{r data import and export paths}
 
-#orig datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/dat/"
-datPath <- "C:/My_Drive/MS/SCoPE/t-SCoPE/Pub/Data_Share/FigureGen/biofigs_BMDM/"
+#Base directory where you unzipped the Figure_gen_files folder
+baseDirectory <- ""
+datPath <- paste0("Figure_gen_files/BMDM_figs_2_3_4/")
 
 #Precursor-level
 t0_mat <- read.delim(paste0(datPath, "t0_BMDM_priori_mrri02_PIF50_DART_1pFDR.txt"))
@@ -982,7 +983,7 @@ ggsave(paste0("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/Figs/v2_figs/Sup
 ```{r Missing data PCA: precursor-level}
 
 PMD.m <- melt(ProtMissing, id.vars = "Proteins")
-PMD.m_sum <- PD.m %>% group_by(variable) %>% summarize(fracMD = sum(is.na(value))/n())
+PMD.m_sum <- PMD.m %>% group_by(variable) %>% summarize(fracMD = sum(is.na(value))/n())
 
 PCAout_both_coords_MDsupp <- as.data.frame(PCAout_both_coords[,1:2])
 PCAout_both_coords_MDsupp$id <- row.names(PCAout_both_coords_MDsupp)
