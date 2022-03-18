@@ -28,7 +28,7 @@ The code blocks in this repository for figure generation and inclusion list gene
 #### Publication figure generation
 The minimal data needed for figure generation is available by following the "Download data" link above and downloading the figure_data.zip directory.
 
-All publication figures can be generated at via the .rmd file, or the technical and biological figures can be generated separately by running either the PDAC_BMDM_technical_figure_generation_script.rmd file or the BMDM_bio_figure_generation_script.rmd file, respectively.
+All publication figures can be generated separately by running either the PDAC_BMDM_technical_figure_generation_script.rmd file or the BMDM_bio_figure_generation_script.rmd file, respectively.
 
 #### Inclusion-list generation
 A prioritized inclusion list can generated from DIA data searched by Spectronaut using the inclusion_list_generation.rmd file.
