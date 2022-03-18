@@ -104,7 +104,7 @@ description: "download single-cell proteomics data from pSCoPE, a prioritized SC
 
 <h2 style="letter-spacing: 2px; font-size: 26px;" id="processed-single-cell-protein-data" >Files needed to regenerate preprint figures</h2>
 &nbsp;
-* [Additional data files](https://drive.google.com/file/d/1WRVpDCJPxYjfOX-QWvoq86RqfKbmVfGc/view?usp=sharing) necessary for generating figures from the pSCoPE preprint <!--[SCoPE2 article](https://doi.org/10.1101/665307).-->
+* [Additional data files](https://drive.google.com/file/d/1WRVpDCJPxYjfOX-QWvoq86RqfKbmVfGc/view?usp=sharing) necessary for generating figures from the pSCoPE preprint <!--[SCoPE2 article](https://doi.org/10.1101/665307).
 
 <!--&nbsp;-->
 
