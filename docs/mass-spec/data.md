@@ -103,7 +103,7 @@ description: "download single-cell proteomics data from pSCoPE, a prioritized SC
 <!-- * [Minimal data files](https://drive.google.com/drive/folders/10pOMMlxHsFIyPa9X2auq6xKJssqFgo-D?usp=sharing) necessary for generating Peptides-raw.csv and Proteins-processed.csv -->
 
 &nbsp;
-<!-- * [Additional data files](https://drive.google.com/drive/folders/1Zhjik_JFjCQNIVjg63-fooJ4K0HZxWjV?usp=sharing) necessary for generating figures from the [SCoPE2 article](https://doi.org/10.1101/665307).  -->
+* [Additional data files](https://drive.google.com/file/d/1WRVpDCJPxYjfOX-QWvoq86RqfKbmVfGc/view?usp=sharing) necessary for generating figures from the pSCoPE preprint <!--[SCoPE2 article](https://doi.org/10.1101/665307).-->
 
 <!--&nbsp;-->
 
