@@ -8,18 +8,17 @@ Prioritized Single-Cell ProtEomics by Mass Spectrometry
 * [Website](https://scp.slavovlab.net/pSCoPE)
 * [Running](#running)
 * [Download data](https://scp.slavovlab.net/Huffman_et_al_2022)
-<!--
-* [Preprint](https://www.biorxiv.org/content/10.1101/665307v3)
--->
+* [Preprint](https://www.biorxiv.org/content/10.1101/2022.03.16.484655v1)
+
 
 
 ![workflow](Workflow_v7.png)
 
 ### Requirements
 
-[MaxQuant.live (v. 2.1)](www.maxquant.live) contains the prioritization feature applied in the pSCoPE manuscript. This tool is compatible with Thermo orbitrap instruments running Tune v. 2.9 and Microsoft .Net v. 4.7.2. An automated system compatibility assessment is available on the linked MaxQuant.Live website. 
+[MaxQuant.live (v. 2.1)](www.maxquant.live) contains the prioritization feature applied in the pSCoPE manuscript. This tool is compatible with Thermo orbitrap instruments running Tune v. 2.9 and Microsoft .Net v. 4.7.2. An automated system compatibility assessment is available on the linked MaxQuant.Live website.
 
-The code blocks in this repository for figure generation and inclusion list generation have been tested on R >= 4.0.2, OSX 10.14 / Windows 10. R can be downloaded from the main [R Project page](https://www.r-project.org/) or downloaded with the [RStudio Application](https://www.rstudio.com/products/rstudio/download/). 
+The code blocks in this repository for figure generation and inclusion list generation have been tested on R >= 4.0.2, OSX 10.14 / Windows 10. R can be downloaded from the main [R Project page](https://www.r-project.org/) or downloaded with the [RStudio Application](https://www.rstudio.com/products/rstudio/download/).
 
 
 
