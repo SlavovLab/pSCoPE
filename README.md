@@ -30,7 +30,7 @@ The minimal data needed for figure generation is available by following the "Dow
 All publication figures can be generated separately by running either the PDAC_BMDM_technical_figure_generation_script.rmd file or the BMDM_bio_figure_generation_script.rmd file, respectively.
 
 #### Inclusion-list generation
-A prioritized inclusion list can generated from DIA data searched by Spectronaut using the prioritizedInclusionListGen.rmd file. A sample set of Spectronaut search results to use can be found in the sampleData directory.
+A prioritized inclusion list can generated from DIA data searched by Spectronaut using the prioritizedInclusionListGen.rmd file. A sample set of Spectronaut search results to use can be found in the sampleFiles directory.
 
 #### MaxQuant.Live log files
 Information from the MaxQuant.Live log files can be extracted using the MaxQuantLive_Log_Stats_Script.rmd file.
