@@ -1,0 +1,138 @@
+---
+title: "prioritizedInclusionListGen.rmd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Libraries
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+
+#############
+# Data Import
+#############
+# fill in your path and experiment name, here
+# a sample file corresponding to wGH0487_Report.xls has been included in the github repo as a sample
+DIA <- read.delim(".../wGH0487_Report.xls")
+DIA_exp <- "wGH0487"
+
+DIA <- DIA %>% filter(R.FileName == DIA_exp)
+
+
+# User defined output directory and tList name
+directory_out <- ".../TLists/First_List"
+tList_name <-  "prioritizedInclusionList_v1"
+ 
+
+dir.create(file.path(directory_out), showWarnings = FALSE)  
+```
+
+```{r}
+DIA_filt <- DIA %>% dplyr::filter(EG.PEP <= .02, EG.Qvalue <= .05) %>%   
+  dplyr::select(PEP.StrippedSequence,EG.ModifiedSequence,EG.ApexRT,EG.PEP,FG.Charge,FG.PrecMz,EG.TotalQuantity..Settings.,PG.ProteinGroups,R.FileName, PG.Genes,FG.LabeledSequence,PG.ProteinDescriptions)
+
+DIA_filt$Charge_double <- as.double(DIA_filt$FG.Charge)
+DIA_filt$Mass <- ((DIA_filt$FG.PrecMz)*(DIA_filt$Charge_double))-(1.0072826748*((DIA_filt$Charge_double)))
+DIA_filt$MassRound <- round(DIA_filt$Mass,7)
+
+
+######
+# If you're prioritizing labeled species only
+######
+
+DIA_filt <- DIA_filt %>% filter(grepl("TMTpro_Nter",DIA_filt$FG.LabeledSequence)|grepl("TMTpro_Lys",DIA_filt$FG.LabeledSequence)) 
+DIA_filt$SeqCharge <- paste0(DIA_filt$FG.LabeledSequence, DIA_filt$FG.Charge)
+DIA_filt$SeqCharge <- gsub("\\[TMTpro_Nter\\]","",DIA_filt$SeqCharge)
+DIA_filt$SeqCharge <- gsub("\\[TMTpro_Lys\\]","",DIA_filt$SeqCharge)
+
+DIA_filt_single <- DIA_filt %>% dplyr::group_by(SeqCharge) %>% dplyr::top_n(-1,EG.PEP) %>% dplyr::slice(1)
+
+DIA_filt_single$RT_sec <- round(DIA_filt_single$EG.ApexRT*60)
+DIA_filt_single$ind <- rownames(DIA_filt_single)
+DIA_filt_single <- DIA_filt_single %>% ungroup()
+
+
+
+############
+# unfiltered for RT align
+############
+
+DIA_unfilt <- DIA %>%   
+  dplyr::select(PEP.StrippedSequence,EG.ModifiedSequence,EG.ApexRT,EG.PEP,FG.Charge,FG.PrecMz,EG.TotalQuantity..Settings.,PG.ProteinGroups,R.FileName, PG.Genes,FG.LabeledSequence,PG.ProteinDescriptions)
+
+DIA_unfilt$Charge_double <- as.double(DIA_unfilt$FG.Charge)
+DIA_unfilt$Mass <- ((DIA_unfilt$FG.PrecMz)*(DIA_unfilt$Charge_double))-(1.0072826748*((DIA_unfilt$Charge_double)))
+DIA_unfilt$MassRound <- round(DIA_unfilt$Mass,7)
+
+DIA_unfilt <- DIA_unfilt %>% filter(grepl("TMTpro_Nter",DIA_unfilt$FG.LabeledSequence)|grepl("TMTpro_Lys",DIA_unfilt$FG.LabeledSequence)) 
+DIA_unfilt$SeqCharge <- paste0(DIA_unfilt$FG.LabeledSequence, DIA_unfilt$FG.Charge)
+DIA_unfilt$SeqCharge <- gsub("\\[TMTpro_Nter\\]","",DIA_unfilt$SeqCharge)
+DIA_unfilt$SeqCharge <- gsub("\\[TMTpro_Lys\\]","",DIA_unfilt$SeqCharge)
+
+DIA_unfilt_single <- DIA_unfilt %>% dplyr::group_by(SeqCharge) %>% dplyr::top_n(-1,EG.PEP) %>% dplyr::slice(1)
+DIA_unfilt_single <- DIA_unfilt_single %>% filter(!(SeqCharge %in% DIA_filt_single$SeqCharge))
+DIA_unfilt_single$RT_sec <- round(DIA_unfilt_single$EG.ApexRT*60)
+DIA_unfilt_single$ind <- rownames(DIA_unfilt_single)
+DIA_unfilt_single <- DIA_unfilt_single %>% ungroup()
+
+############
+# Giving attributes to prioritized peptides and RT-only peptides
+############
+
+filtDIA <- DIA_filt_single %>% group_by(SeqCharge) %>% slice(1)
+unfiltDIA <- DIA_unfilt_single %>% group_by(SeqCharge) %>% slice(1)
+
+filtDIA$TargBool <- TRUE
+unfiltDIA$TargBool <- FALSE
+
+DIA_input <- rbind(filtDIA, unfiltDIA)
+
+DIA_input$Prot <- gsub(";.*","",DIA_input$PG.ProteinGroups)
+DIA_input$Prot <- gsub("-.*","",DIA_input$Prot)
+
+
+DIA_input$RTBool <- TRUE
+DIA_input$Masses <- "376.27"
+DIA_input$Leading.razor.protein <- DIA_input$PG.ProteinGroups
+DIA_input$Leading.razor.protein <- sub(';.*$','', DIA_input$Leading.razor.protein)
+
+
+colsToSelect <- c("PEP.StrippedSequence","EG.ModifiedSequence","EG.ApexRT","FG.Charge","EG.TotalQuantity..Settings.","MassRound","TargBool","RTBool","Masses", "Leading.razor.protein","SeqCharge")
+
+FinalDF <- DIA_input %>% ungroup() %>% dplyr::select(colsToSelect)
+
+FinalDF$newMod <- paste0(FinalDF$PEP.StrippedSequence,"0",rownames(FinalDF))
+
+colnames(FinalDF) <-c("Sequence","ModSeq","Retention.time","Charge","Apex.intensity","Mass","TargBoolean","RTC_Boolean","Fragments.mz","Leading.razor.protein","SeqCharge","Modified")
+
+
+FinalDF$Retention.time <- round(FinalDF$Retention.time,3)
+FinalDF$Apex.intensity <- round(FinalDF$Apex.intensity,6)
+
+###
+# Uncomment this if you're using a delayed acquisition method, otherwise not
+###
+#FinalDF$RT_adj <- FinalDF$Retention.time.x - 25
+
+FinalDF <- as.data.frame(FinalDF)
+
+
+# Defining intensity tertiles for intensity-based priority tiers
+IntQuant <-quantile(FinalDF$Apex.intensity, c(.33,.66))
+
+# To define priority based on precursor intensity
+FinalDF$Priority <- ifelse((FinalDF$TargBoolean == TRUE) & (FinalDF$Apex.intensity <= IntQuant[[1]]),1,ifelse((FinalDF$TargBoolean == TRUE) & (FinalDF$Apex.intensity > IntQuant[[1]])&(FinalDF$Apex.intensity <= IntQuant[[2]]),2,ifelse((FinalDF$TargBoolean == TRUE)& (FinalDF$Apex.intensity > IntQuant[[2]]), 3,0)))
+
+# To define additional priority tier based on membership in a pre-defined set of peptides of interest
+#FinalDF$Priority <- ifelse(FinalDF$SeqCharge %in% setPeps$SeqCharge,4,FinalDF$Priority) 
+
+write.table(FinalDF, file = paste0(directory_out,"/",tList_name,".txt"), sep = "\t",
+            row.names = FALSE, col.names = TRUE, quote = FALSE)
+```
+
