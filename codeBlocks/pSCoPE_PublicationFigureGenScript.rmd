@@ -1,5 +1,5 @@
 ---
-title: "pSCoPE_figGen_Final_1022"
+title: "pSCoPE_PublicationFigureGeneratingScript"
 author: "Gray Huffman"
 date: '2022-10-04'
 output: html_document
@@ -257,6 +257,7 @@ for(j in 1:(length(GO_terms))){
 return(WRS_test_out_full)
 }
 
+# Borrowed from scp (Specht, et. al)
 cr_norm_log<-function(dat){
   
   for(k in 1:ncol(dat)){
@@ -275,6 +276,143 @@ cr_norm_log<-function(dat){
   
   return(dat)
 }
+
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+
+    data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+
+PCA_PSEA <- function(PCA_weights, GeneProteinMappings, GeneSetDB){
+    GeneSetDB <- GeneSetDB %>% filter(!is.na(GO_term_name))
+    GO_terms <- unique(GeneSetDB$GO_term_name)
+    WRS_test_out <- data.frame(Process = character(),numDBentries = numeric(),numberMatchingEntries =     
+                                 numeric(),fracDB = numeric(),pVal = numeric(),EffectSize = numeric(),PC = 
+                                 numeric(),Association = numeric(), stringsAsFactors = FALSE)
+
+    WRS_test_out_full <- data.frame(Process = character(),numDBentries = numeric(),numberMatchingEntries = 
+                                      character(),fracDB = numeric(),pVal = numeric(),EffectSize = numeric(),PC =
+                                      numeric(),Association = numeric(), stringsAsFactors = FALSE)
+
+    ReqNumEntry <- 5
+    fracDB <- .1
+    maxNum <- 200
+    GO_in <- PCA_weights %>% left_join(GeneProteinMappings, by = c("Proteins" = "UNIPROTKB"))
+       
+        for(i in 1:(ncol(GO_in)-2)){
+          GeneInd <- which(colnames(GO_in) == "GENES")
+          GO_in_lim <- GO_in[,c(i,GeneInd)]
+  
+          for(j in 1:(length(GO_terms))){
+             GO_term <- GeneSetDB %>% dplyr::filter(GO_term_name == GO_terms[[j]])
+             GO_term <- GO_term %>% group_by(Gene) %>% slice(1)
+    
+             GO_in_lim$Lab <- ifelse(GO_in_lim$GENES %in% GO_term$Gene,"Target","Background")
+             colnames(GO_in_lim) <- c("Loadings","GENES","Lab")
+             WRS_test_out[j,1] <- GO_terms[[j]]
+             WRS_test_out[j,2] <- length(unique(GO_term$Gene))
+             WRS_test_out[j,3] <- sum(GO_in_lim$Lab == "Target")
+             WRS_test_out[j,4] <- WRS_test_out[j,3]/WRS_test_out[j,2]
+             WRS_test_out[j,7] <- i
+ 
+    
+             if((sum(GO_in_lim$Lab == "Target") >= ReqNumEntry)&(WRS_test_out[j,4] >= fracDB)&(WRS_test_out[j,2]              <= maxNum)){
+                GO_in_lim2 <- GO_in_lim
+                GO_in_lim2$zScore <- (GO_in_lim2$Loadings-mean(GO_in_lim2$Loadings,        
+                                      na.rm=TRUE))/sd(GO_in_lim2$Loadings, na.rm=TRUE)
+      
+                TargGroup <- GO_in_lim2 %>% dplyr::filter(Lab == "Target")
+                BackgroundGroup <- GO_in_lim2 %>% dplyr::filter(Lab != "Target")
+      
+                WRSTest <- wilcox.test(TargGroup$Loadings, BackgroundGroup$Loadings, alternative = "two.sided", 
+                                       paired = FALSE, exact = FALSE)
+                WRS_test_out[j,5] <- WRSTest$p.value
+                WRS_test_out[j,6] <- median(GO_in_lim2[GO_in_lim2$Lab == "Target",4], na.rm = 
+                                             TRUE)/median(GO_in_lim2[GO_in_lim2$Lab != "Target",4], na.rm = TRUE)
+                WRS_test_out[j,8] <- median(GO_in_lim2[GO_in_lim2$Lab == "Target",4], na.rm = TRUE)
+              }
+            if((sum(GO_in_lim$Lab == "Target") < ReqNumEntry)|(WRS_test_out[j,4] < fracDB)|(WRS_test_out[j,2] >                maxNum)){
+                WRS_test_out[j,5] <- NA
+                WRS_test_out[j,6] <- NA
+                WRS_test_out[j,8] <- NA
+            }
+           }
+           WRS_test_out_full <- rbind(WRS_test_out_full,WRS_test_out)
+        }
+        return(WRS_test_out_full)
+}
+
+
+
+# Get z-scored median abundance for protein set
+GO_for_PCA <- function(GOvec,Unimp_in){
+  
+  for (i in 1:length(GOvec)){
+  GO_db_lim <- GO_db %>% filter(GO_term_name %in% GOvec[i])
+  unimp_lim <- Unimp_in %>% filter(GENES %in% GO_db_lim$Gene)
+  unimp_lim_sum <- unimp_lim %>% dplyr::group_by(Var2) %>% dplyr::summarize(medAbund = median(newVar, na.rm = TRUE)) 
+  unimp_lim_sum$medAbund <- (unimp_lim_sum$medAbund-mean(unimp_lim_sum$medAbund, na.rm=TRUE))/sd(unimp_lim_sum$medAbund, na.rm=TRUE)
+  unimp_lim_sum$medAbund <- ifelse(unimp_lim_sum$medAbund >= 2,2,ifelse(unimp_lim_sum$medAbund <= -2,-2,unimp_lim_sum$medAbund))
+  colnames(unimp_lim_sum) <- c("id",as.character(GOvec[[i]]))
+  if(i == 1){
+    GSEA_PC_out <- unimp_lim_sum
+  }
+  if(i > 1){
+    GSEA_PC_out <- GSEA_PC_out %>% left_join(unimp_lim_sum, by = "id")
+  }
+  }
+  return(GSEA_PC_out)
+}
+
+# Permutation function for MEROPS analysis
+CorPermutation <- function(df,CodingDoc,dbString){
+    df_lim <- df[which(colnames(df) %in% c(MEROPSvec,CodingDoc$Entry))]
+    corObs <- as.data.frame(cor(df_lim, method = "pearson", use="pairwise.complete.obs"))
+    corObs$MEROPS <- row.names(corObs)
+    corObs.m <- melt(corObs)
+    corObs.m.f <- corObs.m %>% dplyr::filter((MEROPS %in% MEROPSvec)&(!(variable %in% MEROPSvec)))
+    corObs.m.f <- corObs.m.f %>% dplyr::left_join(CodingDoc, by = c("variable" = "Entry"))
+    corObs.m.f$Coding <- ifelse(corObs.m.f$Type == "Inflammatory","Pro","Anti")
+    corObs_sum <- corObs.m.f %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(corPro = median(value[Coding == "Pro"],na.rm = TRUE),corAnti = median(value[Coding == "Anti"],na.rm = TRUE),CorDist = abs(corPro - corAnti))
+    
+    corObs_sum_lim <- corObs_sum %>% dplyr::select(MEROPS,CorDist)
+    
+    colInds_MEROPS <- which((colnames(df_lim))%in% MEROPSvec) 
+    
+    for(i in 1:10000){
+      sampNames <- sample(which(!(colnames(df_lim))%in% MEROPSvec),length(which(!(colnames(df_lim)%in% MEROPSvec))),replace = FALSE)
+      df_rearranged <- df_lim
+      colnames(df_rearranged) <- c(colnames(df_lim)[sampNames],colnames(df_lim)[colInds_MEROPS])
+      corSim <- as.data.frame(cor(df_rearranged, method = "pearson", use="pairwise.complete.obs"))
+      corSim$MEROPS <- row.names(corSim)
+      corSim.m <- melt(corSim)
+      corSim.m.f <- corSim.m %>% dplyr::filter((MEROPS %in% MEROPSvec)&(!(variable %in% MEROPSvec)))
+      corSim.m.f <- corSim.m.f %>% dplyr::left_join(CodingDoc, by = c("variable" = "Entry"))
+      corSim.m.f$Coding <- ifelse(corSim.m.f$Type == "Inflammatory","Pro","Anti")
+      corSim_sum <- corSim.m.f %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(corPro = median(value[Coding == "Pro"],na.rm = TRUE),corAnti = median(value[Coding == "Anti"],na.rm = TRUE),CorDist = abs(corPro - corAnti))
+      if(i ==1){
+        CorSim_sumOut <- corSim_sum
+      }
+      if(i > 1){
+        CorSim_sumOut <- rbind(CorSim_sumOut,corSim_sum)
+      }
+    }
+    
+    CorSim_sumOut_Comp <- CorSim_sumOut %>% dplyr::left_join(corObs_sum_lim, by = "MEROPS")
+    CorSim_sumOut_Comp$DistBool <- CorSim_sumOut_Comp$CorDist.x > CorSim_sumOut_Comp$CorDist.y 
+  
+    CS_permTest <- CorSim_sumOut_Comp %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(fraction = sum(DistBool,na.rm = TRUE)/n())
+    CS_permTest$qVal <- p.adjust(CS_permTest$fraction, method = "fdr")
+    CS_permTest$qVal2 <- ifelse(CS_permTest$qVal == 0,10^-5,CS_permTest$qVal)
+    CS_permTest$lab <- dbString
+    CS_permTest2 <- CS_permTest %>% left_join(corObs_sum, by = "MEROPS")
+    return(CS_permTest2)
+    }
 ```
 
 ```{r plot themes}
@@ -1021,7 +1159,7 @@ PeptideMD <- Rebuttal_t0_both.m_join %>% ggplot(aes(percentComplete, color = fac
 Fig1d_PeptideConsistency_stats <- Rebuttal_t0_both.m_join %>% group_by(Method,Tier) %>% summarize(medianVal = median(percent,na.rm = TRUE), medianComplete = median(percentComplete, na.rm = TRUE))
 
 
-PeptideMD  + plot_annotation(title = 'Single-Cell Peptide Detection Consistency',theme = theme(plot.title = element_text(size = 18)))
+#PeptideMD  + plot_annotation(title = 'Single-Cell Peptide Detection Consistency',theme = theme(plot.title = element_text(size = 18)))
 #PeptideMD
 #ggsave(paste0(FigOut,"PepMD_consistency_Rebuttal_fig_v4_completeness.pdf"), width = 5 , height = 5.1, units = "in")
 
@@ -1217,8 +1355,12 @@ G2_melHEK_legend
 
 ```{r Fig 3a: Reporter-ion distribution plot}
 # Spike-in peptide sets
-#SI <- read.delim("C:/MyMSMS/SCoPE/t-SCoPE/dat/Rebut_SpikeInPepSets_081522/SC/evidence.txt")
 SI <- read.delim(paste0(datIn,"Fig3/evidence.txt"))
+
+sc_chan<- c("Reporter.intensity.corrected.5","Reporter.intensity.corrected.6","Reporter.intensity.corrected.7","Reporter.intensity.corrected.8","Reporter.intensity.corrected.9","Reporter.intensity.corrected.10","Reporter.intensity.corrected.11","Reporter.intensity.corrected.12","Reporter.intensity.corrected.13","Reporter.intensity.corrected.14","Reporter.intensity.corrected.15","Reporter.intensity.corrected.16","Reporter.intensity.corrected.17","Reporter.intensity.corrected.18")
+
+StandardFill <- c("XwGH0760","XwGH0763","XwGH0766","XwGH0769","XwGH0772","XwGH0775","XwGH0778","XwGH0781")
+
 SI$SeqCharge <- paste0(SI$Modified.sequence,SI$Charge)
 SI <- Empirical_FDR_PEP(SI)
 SI.seqCharge <- SI %>% filter(qVal <= .01,Type != "MSMS") %>% group_by(SeqCharge) %>% top_n(-1, PEP) %>% slice(1)
@@ -1232,50 +1374,44 @@ colorDict[1:4,2] <- c(palette.colors(palette = "Okabe-Ito")[2],palette.colors(pa
 
 SI.seqCharge.SI <- SI.seqCharge.SI %>% left_join(colorDict, by = "Sequence")
 
-yIndex <- seq(50,400,(400-50)/7)
-offset <- 6.5
-SI.seqCharge %>% ggplot(aes(log10(Intensity))) + coord_flip(ylim = c(0,500)) + 
-  geom_segment(y =0, yend = yIndex[1], 
-    x = log10(SI.seqCharge.SI$Intensity[1]), xend = log10(SI.seqCharge.SI$Intensity[1]), 
-    color = SI.seqCharge.SI$color[1], size = .5) +
-    geom_segment(y =0, yend = yIndex[2], 
-    x = log10(SI.seqCharge.SI$Intensity[2]), xend = log10(SI.seqCharge.SI$Intensity[2]),
-    color = SI.seqCharge.SI$color[2], size = .5) +
-    geom_segment(y =0, yend = yIndex[3], 
-    x = log10(SI.seqCharge.SI$Intensity[3]), xend = log10(SI.seqCharge.SI$Intensity[3]),
-    color = SI.seqCharge.SI$color[3], size = .5) +
-    geom_segment(y =0, yend = yIndex[4], 
-    x = log10(SI.seqCharge.SI$Intensity[4]), xend = log10(SI.seqCharge.SI$Intensity[4]),
-    color = SI.seqCharge.SI$color[4], size = .5) +
-    geom_segment(y =0, yend = yIndex[5], 
-    x = log10(SI.seqCharge.SI$Intensity[5]), xend = log10(SI.seqCharge.SI$Intensity[5]),
-    color = SI.seqCharge.SI$color[5], size = .5) +
-    geom_segment(y =0, yend = yIndex[6], 
-    x = log10(SI.seqCharge.SI$Intensity[6]), xend = log10(SI.seqCharge.SI$Intensity[6]),
-    color = SI.seqCharge.SI$color[6], size = .5) +
-    geom_segment(y =0, yend = yIndex[7], 
-    x = log10(SI.seqCharge.SI$Intensity[7]), xend = log10(SI.seqCharge.SI$Intensity[7]),
-    color = SI.seqCharge.SI$color[7], size = .5) +
-    geom_segment(y =0, yend = yIndex[8], 
-    x = log10(SI.seqCharge.SI$Intensity[8]), xend = log10(SI.seqCharge.SI$Intensity[8]),
-    color = SI.seqCharge.SI$color[8], size = .5) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[1])+.1, y = yIndex[1]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[1], angle = 45, color = SI.seqCharge.SI$color[1], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[2])+ .1, y = yIndex[2]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[2], angle = 45, color = SI.seqCharge.SI$color[2], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[3])+ .1, y = yIndex[3]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[3], angle = 45, color = SI.seqCharge.SI$color[3], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[4])+ .1, y = yIndex[4]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[4], angle = 45, color = SI.seqCharge.SI$color[4], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[5])+ .1, y = yIndex[5]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[5], angle = 45, color = SI.seqCharge.SI$color[5], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[6])+ .1, y = yIndex[6]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[6], angle = 45, color = SI.seqCharge.SI$color[6], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[7])+ .1, y = yIndex[7]-offset,hjust = 0, 
-             label = SI.seqCharge.SI$SeqCharge[7], angle = 45, color = SI.seqCharge.SI$color[7], fontface = 2) +
-    annotate("text",x = log10(SI.seqCharge.SI$Intensity[8])+ .1, y = yIndex[8]-offset,hjust = 0,
-             label = SI.seqCharge.SI$SeqCharge[8], angle = 45, color = SI.seqCharge.SI$color[8], fontface = 2) + theme_light() + labs(x = bquote( 'Log'[10]~ 'Precursor Intensity'), y ="Precursors")  + geom_histogram(bins = 100, fill = "transparent", color = "grey40") + theme(axis.title = element_text(size =22), axis.text = element_text(size = 20))
-ggsave(paste0(FigOut,"SpikeIn_Intensity.pdf"), width = 7, height = 5)
+
+evi.tier.p.spikePre <- SI %>% filter((Type != "MSMS"), PIF >= .5, PEP <= .02) %>% mutate(SeqCharge = paste0(Modified.sequence, Charge)) %>% mutate(Type = ifelse(grepl("Spike",Leading.razor.protein),"Spike-in","Endogenous")) %>% select(Raw.file,SeqCharge,sc_chan,Type)
+
+evi.tier.p.spikePre$Raw.file <- paste0("X",evi.tier.p.spikePre$Raw.file)
+
+evi.tier.p.spikePre.m <- melt(evi.tier.p.spikePre, id.vars = c("Raw.file","SeqCharge","Type"))
+#evi.tier.p.spikePre.m$Type <-ifelse(grepl("Spike",evi.tier.p.spikePre.m$Leading.razor.protein),"Spike","Endogenous")
+
+evi.tier.p.spikePre.m$ExpGroup <- ifelse(evi.tier.p.spikePre.m$Raw.file %in% StandardFill, "Standard","other")
+
+RImed <- evi.tier.p.spikePre.m %>% group_by(Type,ExpGroup) %>% summarize(medianVal = median(log10(value),na.rm =TRUE))
+
+RImed.standard <- RImed %>% filter(ExpGroup == "Standard")
+
+
+evi.tier.p.spikePre.m_Standard <- evi.tier.p.spikePre.m %>% filter(ExpGroup == "Standard")
+
+evi.tier.p.spikePre.m_Standard$log10RI <- log10(evi.tier.p.spikePre.m_Standard$value)
+evi.tier.p.spikePre.m_Standard$log10RIadj <- ifelse(!is.finite(evi.tier.p.spikePre.m_Standard$log10RI),NA,evi.tier.p.spikePre.m_Standard$log10RI)
+evi.tier.p.spikePre.m_Standard$log10RIadj_missing <- ifelse(!is.finite(evi.tier.p.spikePre.m_Standard$log10RI),-1,evi.tier.p.spikePre.m_Standard$log10RI)
+
+ContingencyTable.RI <- as.data.frame(table(cut((evi.tier.p.spikePre.m_Standard$log10RIadj),30),evi.tier.p.spikePre.m_Standard$Type))
+#ContingencyTable.RI$Platform <- ifelse(RImed.standard$ %in% ShotgunSet, "Shotgun", "Prioritized")
+ContingencyTable.RI$Start <- stringr::str_match(ContingencyTable.RI$Var1, "\\(([^,]+)")[,2]
+
+#ContingencyTable.RI %>% filter(Var2 == "XwGH0643") %>% ggplot(aes(x = Start, y = Freq)) + geom_col() + coord_cartesian(ylim = c(1,6))
+
+#out <- table(cut((evi.tier.p.spikePre.m$log10RIadj,30)))
+
+ContingencyTable.RIneg <- ContingencyTable.RI
+ContingencyTable.RIneg$Freq <- -ContingencyTable.RIneg$Freq
+
+ContingencyFull <- rbind(ContingencyTable.RI,ContingencyTable.RIneg)
+ContingencyFull$StartNum <- as.numeric(ContingencyFull$Start)
+ContingencyFull$FacetLab <- ifelse(ContingencyFull$Var2 == "Endogenous","Single cell","Spike in")
+
+ContingencyFull %>% ggplot(aes(y = Freq,x = StartNum)) + geom_col() + coord_flip() + facet_wrap(~FacetLab, scales="free_x") + theme_light() + labs(x = expression("Log"[10]~"(Reporter-Ion Intensity)"), y = "Fraction of Identified Peptides") + scale_x_continuous(limits = c(1, 6), breaks = seq(1, 6, by = 1)) + theme(axis.title.x = element_text(size =22),axis.title.y = element_text(size =23), axis.text = element_text(size = 20), axis.text.x = element_blank(), strip.background = element_rect( fill = "grey95", color = "grey70"), strip.text = element_text(color= "black", size = 22,face = "bold"))
+ggsave(paste0(FigOut,"SpikeInRII_violin_v2.pdf"), width = 7, height = 5, units = "in")
 ```
 
 ```{r Fig 3b: Spike-in peptide quantitation}
@@ -1284,22 +1420,16 @@ sc_chan<- c("Reporter.intensity.corrected.5","Reporter.intensity.corrected.6","R
 sc_chanLoop <- c("Reporter.intensity.corrected.5","Reporter.intensity.corrected.6","Reporter.intensity.corrected.7","Reporter.intensity.corrected.8","Reporter.intensity.corrected.9","Reporter.intensity.corrected.10","Reporter.intensity.corrected.11","Reporter.intensity.corrected.12","Reporter.intensity.corrected.13","Reporter.intensity.corrected.14","Reporter.intensity.corrected.15","Reporter.intensity.corrected.16","Reporter.intensity.corrected.17","Reporter.intensity.corrected.18","Reporter.intensity.corrected.5","Reporter.intensity.corrected.6","Reporter.intensity.corrected.7","Reporter.intensity.corrected.8","Reporter.intensity.corrected.9","Reporter.intensity.corrected.10","Reporter.intensity.corrected.11","Reporter.intensity.corrected.12","Reporter.intensity.corrected.13","Reporter.intensity.corrected.14","Reporter.intensity.corrected.15","Reporter.intensity.corrected.16","Reporter.intensity.corrected.17","Reporter.intensity.corrected.18")
 
 
-Rebuttal_CG_both <- read.csv(paste0(datIn,"Fig3/Annotation_for_scp.csv"))
-Rebuttal_CG_both.m <- melt(Rebuttal_CG_both, id.vars = "Set")
-Rebuttal_CG_both.m$Set <- paste0("X",Rebuttal_CG_both.m$Set)
-Rebuttal_CG_both.m$RI <- gsub("RI","Reporter.intensity.corrected.",Rebuttal_CG_both.m$variable)
-Rebuttal_CG_both.m.lim <- Rebuttal_CG_both.m %>% filter(value %in% c("H","M"))
+#Rebuttal_CG_both <- read.csv(paste0(datIn,"Fig3/Annotation_for_scp.csv"))
+#Rebuttal_CG_both.m <- melt(Rebuttal_CG_both, id.vars = "Set")
+#Rebuttal_CG_both.m$Set <- paste0("X",Rebuttal_CG_both.m$Set)
+#Rebuttal_CG_both.m$RI <- gsub("RI","Reporter.intensity.corrected.",Rebuttal_CG_both.m$variable)
+#Rebuttal_CG_both.m.lim <- Rebuttal_CG_both.m %>% filter(value %in% c("H","M"))
 
 evi.tier.p.spike <- SI %>% filter(grepl("Spike",Leading.razor.protein)&(Type != "MSMS"), PIF >= .5, PEP <= .02) %>% mutate(SeqCharge = paste0(Modified.sequence, Charge)) %>% select(Raw.file,SeqCharge,sc_chan)
 evi.tier.p.spike$Raw.file <- paste0("X",evi.tier.p.spike$Raw.file)
 
 evi.tier.p.spike.m <- melt(evi.tier.p.spike)
-evi.tier.p.spike.m
-
-#evi.tier.p.spike.m %>% dplyr::filter(SeqCharge == "_AYFTAPSSER_2") %>% ggplot(aes(log10(value))) + geom_histogram() + facet_grid(rows = vars(Raw.file), cols = vars(variable)) + coord_flip()
-
-#Old Search Pattern
-#patternIndStartRef <- c("Reporter.intensity.corrected.13","Reporter.intensity.corrected.12","Reporter.intensity.corrected.11","Reporter.intensity.corrected.5","Reporter.intensity.corrected.18","Reporter.intensity.corrected.17","Reporter.intensity.corrected.16","Reporter.intensity.corrected.15","Reporter.intensity.corrected.14","Reporter.intensity.corrected.13","Reporter.intensity.corrected.12","Reporter.intensity.corrected.11","Reporter.intensity.corrected.5","Reporter.intensity.corrected.18","Reporter.intensity.corrected.17","Reporter.intensity.corrected.16","Reporter.intensity.corrected.15","Reporter.intensity.corrected.14","Reporter.intensity.corrected.13","Reporter.intensity.corrected.12","Reporter.intensity.corrected.11","Reporter.intensity.corrected.5","Reporter.intensity.corrected.18","Reporter.intensity.corrected.17","Reporter.intensity.corrected.16","Reporter.intensity.corrected.15","Reporter.intensity.corrected.14","Reporter.intensity.corrected.13","Reporter.intensity.corrected.12","Reporter.intensity.corrected.11","Reporter.intensity.corrected.5","Reporter.intensity.corrected.18","Reporter.intensity.corrected.17","Reporter.intensity.corrected.16","Reporter.intensity.corrected.15","Reporter.intensity.corrected.14","Reporter.intensity.corrected.13","Reporter.intensity.corrected.12","Reporter.intensity.corrected.11")
 
 #New search pattern
 patternIndStartRef <- c("Reporter.intensity.corrected.13","Reporter.intensity.corrected.5","Reporter.intensity.corrected.16","Reporter.intensity.corrected.13","Reporter.intensity.corrected.5","Reporter.intensity.corrected.16","Reporter.intensity.corrected.13","Reporter.intensity.corrected.5")
@@ -1319,10 +1449,7 @@ for(i in 1:length(unique(evi.tier.p.spike$Raw.file))){
   
   evi_consist.single <- evi.tier.p.spike %>% filter(Raw.file ==unique(evi.tier.p.spike$Raw.file)[i]) %>% select(SeqCharge,labelOrder)
   
-  #Rebuttal_CG.lim <- Rebuttal_CG_both.m.lim  %>% filter(Set ==unique(evi.tier.p.spike$Raw.file)[i])
-  
-  #evi_consist.single.m <- melt(evi_consist.single)
-  
+
   RI_input_dictionary <- as.data.frame(colnames(evi_consist.single))
   colnames(RI_input_dictionary) <- "Channel"
   RI_input_dictionary$input <- SpikeInLabs
@@ -1339,22 +1466,6 @@ for(i in 1:length(unique(evi.tier.p.spike$Raw.file))){
   
   evi_consist.single.m <- evi_consist.single.m %>% left_join(pepMed, by = "SeqCharge")
   evi_consist.single.m$normInt <- evi_consist.single.m$logInt - evi_consist.single.m$medQuant
-  
-  #evi_consist.single.m.lim <- evi_consist.single.m %>% filter(Channel %in% Rebuttal_CG.lim$RI) %>% select(logConcentration,normInt)
- # evi_consist.single.m.lim <- evi_consist.single.m %>% select(logConcentration,normInt)
- # eviMat <- as.matrix(evi_consist.single.m.lim)
-  
- #  evi_consist.single.m.lim$logInt.cor <- ifelse(!is.finite(evi_consist.single.m.lim$normInt),NA,evi_consist.single.m.lim$normInt)
- # model = lm(logInt.cor ~ logConcentration - 1, dat = evi_consist.single.m.lim)
-
-#  intercept <- 0
-#  slope <- summary(model)[[4]][1]
-#  rSq <- summary(model)[[8]]
-  
-#  model_outputs[i,1] <- unique(evi.tier.p.spike$Raw.file)[i]
-#  model_outputs[i,2] <- intercept
-#  model_outputs[i,3] <- slope
-#  model_outputs[i,4] <- rSq
   
   evi_consist.single.m$Raw.file <- unique(evi.tier.p.spike$Raw.file)[i]
   
@@ -1397,6 +1508,7 @@ modelFull.StandardFill = lm(medInt_rev ~ medConc_rev + 0, dat = evi_out_sum)
   
 evi_out_sumsum <- evi_out_sum %>% group_by(medConc_rev) %>% summarize(medVal = median(medInt_rev, na.rm=TRUE), sdVal = sd(medInt_rev,na.rm = TRUE))   
   
+evi_out_sum_count <- evi_out_sum %>% group_by(medConc_rev) %>% summarize(countVal = n())
 
 evi_out_sumsum %>% ggplot(aes(x = medConc_rev , y = medVal)) + geom_point(size = 6, shape = 21, fill = "grey50") + geom_errorbar(aes(x =medConc_rev,ymin = medVal - sdVal,ymax = medVal + sdVal), height = 0, width = 0.3)  + geom_abline(intercept = interceptFull.StandardFill, slope =slopeFull.StandardFill) + geom_text(x = 4, y = 0, label = paste0("Slope = ",round(slopeFull.StandardFill,2)), size = 8) + 
   geom_text(x = 3.24, y = -.7, label = bquote("R^2"),size = 8, parse = TRUE) + geom_text(x = 3.95, y = -.75, label = paste0("= ",rSqFull.StandardFill), size = 8) + 
@@ -1409,7 +1521,7 @@ evi_out_sumsum %>% ggplot(aes(x = medConc_rev , y = medVal)) + geom_point(size =
 ggsave(paste0(FigOut,"RegressionAllData_RISeqComb_StandardFill_MedandPoints_v3_adjScale.pdf"), width = 7, 
        height = 7, units = "in")
 
-evi_out_sum_count <- evi_out_sum %>% group_by(medConc_rev) %>% summarize(countVal = n())
+
 ```
 
 #------------------------------------
@@ -1420,176 +1532,11 @@ evi_out_sum_count <- evi_out_sum %>% group_by(medConc_rev) %>% summarize(countVa
 # Fig. 4: BMDM PCA and Protein-set-enrichment analysis
 #----------------
 
-#```{r package loading}
-#library(dplyr)
-#library(ggplot2)
-#library(reshape2)
-#library(stringr)
-#library(patchwork)
-#```
-
-```{r function}
-
-PCA_PSEA <- function(PCA_weights, GeneProteinMappings, GeneSetDB){
-    GeneSetDB <- GeneSetDB %>% filter(!is.na(GO_term_name))
-    GO_terms <- unique(GeneSetDB$GO_term_name)
-    WRS_test_out <- data.frame(Process = character(),numDBentries = numeric(),numberMatchingEntries =     
-                                 numeric(),fracDB = numeric(),pVal = numeric(),EffectSize = numeric(),PC = 
-                                 numeric(),Association = numeric(), stringsAsFactors = FALSE)
-
-    WRS_test_out_full <- data.frame(Process = character(),numDBentries = numeric(),numberMatchingEntries = 
-                                      character(),fracDB = numeric(),pVal = numeric(),EffectSize = numeric(),PC =
-                                      numeric(),Association = numeric(), stringsAsFactors = FALSE)
-
-    ReqNumEntry <- 5
-    fracDB <- .1
-    maxNum <- 200
-    GO_in <- PCA_weights %>% left_join(GeneProteinMappings, by = c("Proteins" = "UNIPROTKB"))
-       
-        for(i in 1:(ncol(GO_in)-2)){
-          GeneInd <- which(colnames(GO_in) == "GENES")
-          GO_in_lim <- GO_in[,c(i,GeneInd)]
-  
-          for(j in 1:(length(GO_terms))){
-             GO_term <- GeneSetDB %>% dplyr::filter(GO_term_name == GO_terms[[j]])
-             GO_term <- GO_term %>% group_by(Gene) %>% slice(1)
-    
-             GO_in_lim$Lab <- ifelse(GO_in_lim$GENES %in% GO_term$Gene,"Target","Background")
-             colnames(GO_in_lim) <- c("Loadings","GENES","Lab")
-             WRS_test_out[j,1] <- GO_terms[[j]]
-             WRS_test_out[j,2] <- length(unique(GO_term$Gene))
-             WRS_test_out[j,3] <- sum(GO_in_lim$Lab == "Target")
-             WRS_test_out[j,4] <- WRS_test_out[j,3]/WRS_test_out[j,2]
-             WRS_test_out[j,7] <- i
- 
-    
-             if((sum(GO_in_lim$Lab == "Target") >= ReqNumEntry)&(WRS_test_out[j,4] >= fracDB)&(WRS_test_out[j,2]              <= maxNum)){
-                GO_in_lim2 <- GO_in_lim
-                GO_in_lim2$zScore <- (GO_in_lim2$Loadings-mean(GO_in_lim2$Loadings,        
-                                      na.rm=TRUE))/sd(GO_in_lim2$Loadings, na.rm=TRUE)
-      
-                TargGroup <- GO_in_lim2 %>% dplyr::filter(Lab == "Target")
-                BackgroundGroup <- GO_in_lim2 %>% dplyr::filter(Lab != "Target")
-      
-                WRSTest <- wilcox.test(TargGroup$Loadings, BackgroundGroup$Loadings, alternative = "two.sided", 
-                                       paired = FALSE, exact = FALSE)
-                WRS_test_out[j,5] <- WRSTest$p.value
-                WRS_test_out[j,6] <- median(GO_in_lim2[GO_in_lim2$Lab == "Target",4], na.rm = 
-                                             TRUE)/median(GO_in_lim2[GO_in_lim2$Lab != "Target",4], na.rm = TRUE)
-                WRS_test_out[j,8] <- median(GO_in_lim2[GO_in_lim2$Lab == "Target",4], na.rm = TRUE)
-              }
-            if((sum(GO_in_lim$Lab == "Target") < ReqNumEntry)|(WRS_test_out[j,4] < fracDB)|(WRS_test_out[j,2] >                maxNum)){
-                WRS_test_out[j,5] <- NA
-                WRS_test_out[j,6] <- NA
-                WRS_test_out[j,8] <- NA
-            }
-           }
-           WRS_test_out_full <- rbind(WRS_test_out_full,WRS_test_out)
-        }
-        return(WRS_test_out_full)
-}
-
-# Column and row normalization (borrowed from scp pipeline function for consistency)
-cr_norm_log<-function(dat){
-  
-  for(k in 1:ncol(dat)){
-    
-    dat[,k]<-dat[,k]-median(dat[,k], na.rm = T)
-    
-    
-  }
-  
-  
-  for(k in 1:nrow(dat)){
-    
-    dat[k,]<-dat[k,]-mean(dat[k,], na.rm = T)
-    
-  }
-  
-  return(dat)
-}
-
-flattenCorrMatrix <- function(cormat, pmat) {
-  ut <- upper.tri(cormat)
-
-    data.frame(
-    row = rownames(cormat)[row(cormat)[ut]],
-    column = rownames(cormat)[col(cormat)[ut]],
-    cor  =(cormat)[ut],
-    p = pmat[ut]
-    )
-}
-
-# Get z-scored median abundance for protein set
-GO_for_PCA <- function(GOvec,Unimp_in){
-  
-  for (i in 1:length(GOvec)){
-  GO_db_lim <- GO_db %>% filter(GO_term_name %in% GOvec[i])
-  unimp_lim <- Unimp_in %>% filter(GENES %in% GO_db_lim$Gene)
-  unimp_lim_sum <- unimp_lim %>% dplyr::group_by(Var2) %>% dplyr::summarize(medAbund = median(newVar, na.rm = TRUE)) 
-  unimp_lim_sum$medAbund <- (unimp_lim_sum$medAbund-mean(unimp_lim_sum$medAbund, na.rm=TRUE))/sd(unimp_lim_sum$medAbund, na.rm=TRUE)
-  unimp_lim_sum$medAbund <- ifelse(unimp_lim_sum$medAbund >= 2,2,ifelse(unimp_lim_sum$medAbund <= -2,-2,unimp_lim_sum$medAbund))
-  colnames(unimp_lim_sum) <- c("id",as.character(GOvec[[i]]))
-  if(i == 1){
-    GSEA_PC_out <- unimp_lim_sum
-  }
-  if(i > 1){
-    GSEA_PC_out <- GSEA_PC_out %>% left_join(unimp_lim_sum, by = "id")
-  }
-  }
-  return(GSEA_PC_out)
-}
-
-# Permutation function for MEROPS analysis
-CorPermutation <- function(df,CodingDoc,dbString){
-    df_lim <- df[which(colnames(df) %in% c(MEROPSvec,CodingDoc$Entry))]
-    corObs <- as.data.frame(cor(df_lim, method = "pearson", use="pairwise.complete.obs"))
-    corObs$MEROPS <- row.names(corObs)
-    corObs.m <- melt(corObs)
-    corObs.m.f <- corObs.m %>% dplyr::filter((MEROPS %in% MEROPSvec)&(!(variable %in% MEROPSvec)))
-    corObs.m.f <- corObs.m.f %>% dplyr::left_join(CodingDoc, by = c("variable" = "Entry"))
-    corObs.m.f$Coding <- ifelse(corObs.m.f$Type == "Inflammatory","Pro","Anti")
-    corObs_sum <- corObs.m.f %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(corPro = median(value[Coding == "Pro"],na.rm = TRUE),corAnti = median(value[Coding == "Anti"],na.rm = TRUE),CorDist = abs(corPro - corAnti))
-    
-    corObs_sum_lim <- corObs_sum %>% dplyr::select(MEROPS,CorDist)
-    
-    colInds_MEROPS <- which((colnames(df_lim))%in% MEROPSvec) 
-    
-    for(i in 1:10000){
-      sampNames <- sample(which(!(colnames(df_lim))%in% MEROPSvec),length(which(!(colnames(df_lim)%in% MEROPSvec))),replace = FALSE)
-      df_rearranged <- df_lim
-      colnames(df_rearranged) <- c(colnames(df_lim)[sampNames],colnames(df_lim)[colInds_MEROPS])
-      corSim <- as.data.frame(cor(df_rearranged, method = "pearson", use="pairwise.complete.obs"))
-      corSim$MEROPS <- row.names(corSim)
-      corSim.m <- melt(corSim)
-      corSim.m.f <- corSim.m %>% dplyr::filter((MEROPS %in% MEROPSvec)&(!(variable %in% MEROPSvec)))
-      corSim.m.f <- corSim.m.f %>% dplyr::left_join(CodingDoc, by = c("variable" = "Entry"))
-      corSim.m.f$Coding <- ifelse(corSim.m.f$Type == "Inflammatory","Pro","Anti")
-      corSim_sum <- corSim.m.f %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(corPro = median(value[Coding == "Pro"],na.rm = TRUE),corAnti = median(value[Coding == "Anti"],na.rm = TRUE),CorDist = abs(corPro - corAnti))
-      if(i ==1){
-        CorSim_sumOut <- corSim_sum
-      }
-      if(i > 1){
-        CorSim_sumOut <- rbind(CorSim_sumOut,corSim_sum)
-      }
-    }
-    
-    CorSim_sumOut_Comp <- CorSim_sumOut %>% dplyr::left_join(corObs_sum_lim, by = "MEROPS")
-    CorSim_sumOut_Comp$DistBool <- CorSim_sumOut_Comp$CorDist.x > CorSim_sumOut_Comp$CorDist.y 
-  
-    CS_permTest <- CorSim_sumOut_Comp %>% dplyr::group_by(MEROPS) %>% dplyr::summarize(fraction = sum(DistBool,na.rm = TRUE)/n())
-    CS_permTest$qVal <- p.adjust(CS_permTest$fraction, method = "fdr")
-    CS_permTest$qVal2 <- ifelse(CS_permTest$qVal == 0,10^-5,CS_permTest$qVal)
-    CS_permTest$lab <- dbString
-    CS_permTest2 <- CS_permTest %>% left_join(corObs_sum, by = "MEROPS")
-    return(CS_permTest2)
-    }
-```
-
 ```{r data import for BMDM analyses}
 #Base directory where you unzipped the Figure_gen_files folder
 
 datPath <- paste0(datIn,"BMDM_figs_4_5_6/")
+
 #Precursor-level
 t0_mat <- read.delim(paste0(datPath, "t0_BMDM_priori_mrri02_PIF50_DART_1pFDR.txt"))
 prePCA <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori_mrri02_PIF50_DART_1pFDR.csv"),row.names = "X")
@@ -1599,13 +1546,16 @@ ProtMissing <- read.delim(paste0(datPath,"Prot_missing_BMDM_priori_mrri02_PIF50_
 GO_DB_Path <- paste0(datPath,"GOA_db.txt")
 GO_db <- read.delim(GO_DB_Path, sep = "", header = TRUE)
 GO_db.2 <- GO_db %>% filter(Letter != "C")
+
 # Dextran-Uptake Data
 Dextran_DIA_LPS <- read.delim(paste0(datPath,"DexLPS_LowOverHigh__eGH_358_eGH_360_Data_for_volcanoplot.txt"))
 Dextran_DIA_NT <- read.delim(paste0(datPath,"DexNT_LowOverHigh__eGH_362_eGH_364_Data_for_volcanoplot.txt"))
+
 # Marker Databases for MEROPS
 MarkerDB_SCoPE2 <- read.delim(paste0(datPath,"SCoPE2_markers.txt"))
 SCoPE2_Human2Mouse <- read.delim(paste0(datPath,"SCoPE2_Markers_Dict.tab"))
 BulkDDARatioSet <- read.delim(paste0(datPath,"BulkRatioEvidence.txt"))
+
 # pre-digestion labeled bulk sample for MEROPS analysis
 DIA_Bulk <- read.delim(paste0(datPath,"GHRT_eGH692_Report.xls"))
 
@@ -1617,6 +1567,7 @@ PCAout_both <- prcomp(t(prePCA))
 PCAout_both_coords <- PCAout_both$x
 PCAout_both_weights <- as.data.frame(PCAout_both$rotation[,1:5])
 PCAout_both_weights$Proteins <- row.names(PCAout_both_weights)
+
 # LPS 
 CG_LPS <- CG %>% filter(celltype == "LPS", cvm < .4)
 prePCA_LPS <- prePCA %>% select(CG_LPS$id) 
@@ -1625,6 +1576,7 @@ PCAout_LPS <- prcomp(t(prePCA_LPS_norm))
 PCAout_LPS_coords <- PCAout_LPS$x
 PCAout_LPS_weights <- as.data.frame(PCAout_LPS$rotation[,1:5])
 PCAout_LPS_weights$Proteins <- row.names(PCAout_LPS_weights)
+
 # Untreated
 CG_NT <- CG %>% filter(celltype != "LPS", cvm < .4)
 prePCA_NT <- prePCA %>% select(CG_NT$id) 
@@ -1683,11 +1635,13 @@ NT_PSEA.f$qVal <- p.adjust(NT_PSEA.f$pVal, method = "fdr")
 NT_PSEA.f_fdr <- NT_PSEA.f %>% filter(qVal <= .05 & !(Process %in% Cc_excludeList)) %>% mutate(Condition = "Untreated")
 ```
 
-```{r Fig2A PCA accompaniment data wrangling}
+
+```{r Fig4a PCA accompaniment data wrangling}
 # Batch corrected, imputed cells x proteins matrix
 BC_imp_PxC2 <- prePCA
 BC_imp_PxC2$Proteins <- row.names(BC_imp_PxC2)
 BC_imp_PxC2.m <- melt(BC_imp_PxC2, id.vars = "Proteins")
+
 # Removing imputed protein measurements, by cross-referencing pre-imputation cells x proteins matrix
 ProtMissing.m <- melt(ProtMissing)
 BC_imp_PxC3.m <- BC_imp_PxC2.m %>% left_join(ProtMissing.m, by = c("Proteins", "variable"))
@@ -1699,9 +1653,7 @@ BC_unImp_PxC4 <- BC_unImp_PxC3 %>% select(-Proteins)
 BC_unImp_CxP <- as.data.frame(t(BC_unImp_PxC4))
 BC_unImp_CxP$id <- row.names(BC_unImp_CxP)
 BC_unImp_PxC3.m3 <- BC_unImp_PxC3.m2 %>% left_join(GeneMappings_single2, by = c("Proteins"="UNIPROTKB"))
-```
 
-```{r Fig2A color-coded PCA input}
 GO_Set_for_xCond <- c("type I interferon-mediated signaling pathway","phagosome maturation")
 for (i in 1:length(GO_Set_for_xCond)){
   GO_db_lim <- GO_db %>% filter(GO_term_name %in% GO_Set_for_xCond[i])
@@ -1719,9 +1671,7 @@ PCAout_both_coords2 <- as.data.frame(PCAout_both_coords[,1:2])
 PCAout_both_coords2$id <- row.names(PCAout_both_coords2)
 PCAout_both_coords2 <- PCAout_both_coords2 %>% left_join(GSEA_PC_out, by = "id")
 PCAout_both_coords2 <- PCAout_both_coords2 %>% left_join(CG, by = "id")
-```
 
-```{r}
 # treatment labeled PCA without accompanying bulk measurements (unused in publication)
 celltype_PCA <- PCAout_both_coords2 %>% ggplot(aes(x = PC1, y = PC2, color = celltype)) + geom_point(size = 3, alpha = 0.7, shape = 16) + theme_light() + theme(axis.title = element_text(size = 24), axis.text = element_text(size = 22), legend.position = "null") + ggtitle("") + annotate("text", x = 5.1, y = 6,size = 7, label = "LPS-treated", color = "#F8766D") + annotate("text", x = -5, y = 6,size = 7, label = "Untreated", color = "#00BFC4")
 
@@ -1740,11 +1690,12 @@ IFN_PCA <- PCAout_both_coords2 %>% ggplot(aes(x = PC1, y = PC2, color = IFBin3))
 PM_PCA <- PCAout_both_coords2 %>% ggplot(aes(x = PC1, y = PC2, color = PhagosomeBin3)) + geom_point(size = 2, alpha = 0.7, shape = 16) + theme_light() + theme(axis.title = element_text(size = 16), axis.text = element_blank(), title = element_text(size = 16),legend.title = element_text(size = 22), legend.text = element_text(size = 22), plot.margin = unit(c(0,0,0,0.3),"cm")) + scale_color_gradient2(limits = c(-2,2),low = "blue", mid = "white", high = "red", midpoint =0, breaks = c(-2,0,2), labels = c("-2","0","2")) + ggtitle("Phagosome\nmaturation") + labs(x ="", y = "", color = "Abundance\nz-score") 
 
 AbundancePCAs <- (IFN_PCA + PM_PCA) + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
 AbundancePCAs & theme(plot.margin =  margin(0, 0, 0, 0, "cm"))
 ggsave(paste0(figOut,"xCond_PSEA_PCs_horiz_v3.pdf"), width = 6, height = 4.5, units = "in")
 ```
 
-```{r Fig 2A: treatment-condition PCA with bulk}
+```{r Fig 4a: treatment-condition PCA with bulk}
 # PCA of original BMDM single-cell data
 PCAout_both <- prcomp(t(prePCA))
 PCAout_both_coords_for_bulkPCA <- as.data.frame(PCAout_both$x[,1:2])
@@ -1777,7 +1728,7 @@ theme(axis.title = element_text(size = 24), axis.text = element_text(size = 22),
 ggsave(paste0(figOut,"celltypePlusBulk.pdf"), width = 5, height = 5, units = "in")
 ```
 
-```{r Fig2B: PC-weight-based PCA result clustering and fig-gen}
+```{r Fig4b: PC-weight-based PCA result clustering and fig-gen}
 #Shortening Process Names
 xcond.f_fdr$Process <- ifelse(xcond.f_fdr$Process=="nuclear-transcribed mRNA catabolic process, nonsense-mediated decay","nuclear-transcribed mRNA catabolic process, NMD",ifelse(xcond.f_fdr$Process == "SRP-dependent cotranslational protein targeting to membrane","SRP-dependent protein targeting to membrane",ifelse(xcond.f_fdr$Process == "positive regulation of NF-kappaB transcription factor activity","positive regulation of NF-kappaB TF activity",xcond.f_fdr$Process))) 
 
@@ -1802,8 +1753,10 @@ xcond.f_fdr %>% ggplot(aes(x = PC, y = factor(str_wrap(Process, width = 30), lev
 ggsave(paste0(figOut,"xCond_PC_PSEA_legendBottom.pdf"), width = 7.75, height = 10, units = "in")
 ```
 
-
-```{r Fig3a: Joint LPS and untreated PSEA fig}
+#---------------
+# Fig. 5: Single-condition PSEA and endocytosis figure components
+#---------------
+```{r Fig5a: Joint LPS and untreated PSEA fig}
 Joint_PC_PSEA <- rbind(LPS_PSEA.f_fdr2,NT_PSEA.f_fdr)
 Joint_PC_PSEA$Process <- ifelse(Joint_PC_PSEA$Process == "antigen processing and presentation of exogenous peptide antigen via MHC class II","antigen processing and presentation via MHC class II", ifelse(Joint_PC_PSEA$Process=="nuclear-transcribed mRNA catabolic process, nonsense-mediated decay","nuclear-transcribed mRNA catabolic process, NMD",ifelse(Joint_PC_PSEA$Process=="SRP-dependent cotranslational protein targeting to membrane","SRP-dependent protein targeting to membrane",Joint_PC_PSEA$Process))) 
 
@@ -1839,7 +1792,7 @@ ggsave(paste0(figOut,"CondComp_PC_PSEA_v3.pdf"), width = 9, height = 9, units = 
 
 
 
-```{r Fig 3a: color-coded PCA (Proton transport)}
+```{r Fig 5a: color-coded PCA (Proton transport)}
 PCAout_NT_coords.df <- as.data.frame(PCAout_NT_coords[,1:5])
 PCAout_LPS_coords.df <- as.data.frame(PCAout_LPS_coords[,1:5])
 PCAout_NT_coords.df$id <- row.names(PCAout_NT_coords.df)
@@ -1893,11 +1846,8 @@ ProtRef_df_gene <- as.data.frame(FASTA_in_proteins[,c(2,4)])
 detach("package:seqinr", unload = TRUE)
 ```
 
-#---------------
-# Fig. 5: Endocytosis Figure Components
-#---------------
 
-```{r Dextran data import}
+```{r Fig5b: Dextran data import}
 Dextran_DIA_LPS_filt <- Dextran_DIA_LPS %>% filter(direction != "Not Significant",abs(median_prot_FC) >= 1,!grepl("keratin",PG.ProteinDescriptions))
 Dextran_DIA_NT_filt <- Dextran_DIA_NT %>% filter(direction != "Not Significant",abs(median_prot_FC) >= 1,!grepl("keratin",PG.ProteinDescriptions))
 # Extracting sets of antiendocytic and proendocytic proteins
@@ -1917,7 +1867,7 @@ Endocytosis_NT_outer <- Dextran_DIA_NT_filt_Endocytic_lim %>% filter(!(PG.Protei
 Endocytosis_union <- Endocytosis_union %>% left_join(Dextran_dict_LPS, by = "PG.ProteinAccessions")
 ```
 
-```{r LPS Dextran-Uptake Volcano Plot}
+```{r Fig5b (middle panel) LPS Dextran-Uptake Volcano Plot for differentially abundant proteins}
 require("ggrepel")
 Dextran_DIA_LPS2 <- Dextran_DIA_LPS
 Dextran_DIA_LPS2$Labs <- ifelse(Dextran_DIA_LPS2$direction == "Decreased","High uptake",ifelse(Dextran_DIA_LPS2$direction == "Increased","Low uptake","Not significant"))
@@ -1930,37 +1880,57 @@ Dextran_DIA_LPS2 %>% ggplot(aes(x = -median_prot_FC, y = negLog_q_bin, color = f
 ggsave(paste0(figOut,"LPS_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
 ```
 
-```{r Dextran Uptake Sorting histogram}
+```{r Fig5b (Top Panel) Dextran Uptake Sorting histogram}
 library(tidyr)
 library(scales)
+
 LPS_uptake1 <- read.delim(paste0(datPath,"dextran_graph_LPS1.txt"))
 LPS_uptake2 <- read.delim(paste0(datPath,"dextran_graph_LPS2.txt"))
+
 LPS_uptake1_obs <- LPS_uptake1 %>% uncount(weights = Events)
 LPS_uptake1_obs.f <- LPS_uptake1_obs %>% filter((LPS_uptake1_obs$MFI > 1000)&(LPS_uptake1_obs$MFI < 50000))
+
+
 LPS_uptake1_obs.f$log10MFI <- log10(LPS_uptake1_obs.f$MFI)
+
 LPS_quants <- (quantile((LPS_uptake1_obs.f$MFI),c(.1,.5,.9)))
 
-ggplot(LPS_uptake1_obs.f, aes(x = (MFI), y = ..count.., fill = ..x..)) +
-  geom_histogram(binwidth = .05, pad = TRUE, color = "grey70") +
+#ggplot(LPS_uptake1_obs.f, aes(x = (MFI), y = ..count.., fill = ..x..)) +
+#  geom_histogram(binwidth = .05, pad = TRUE, color = "grey70") +
+#  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+#              labels = trans_format("log10", math_format(.x))) + 
+#  scale_fill_gradient2(low = "#ad0060",high = "#008f67", midpoint = log10(LPS_quants[2]))  + theme_light() +labs(y = "Cells", x = bquote("Dextran Intensity, log"[10])) + theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), legend.text = element_text(size = 26), legend.position="null",plot.margin =unit(c(1,0,0,0),"cm")) + geom_vline(xintercept = LPS_quants[[1]],linetype = "dashed", color = "grey60", size = 2) + geom_vline(xintercept = LPS_quants[[3]],linetype = "dashed",color = "grey60", size = 2) + 
+#  annotate("text",x = (LPS_quants[[1]] - 3750) , y = 1550,size = 12, label = "Low", color = "#D1509D")+
+#  annotate("text",x = (LPS_quants[[1]] - 3750) , y = 1275,size = 12, label = "Uptake", color = "#D1509D")+
+#  annotate("text",x = (LPS_quants[[1]] - 3750) , y = 1000,size = 8.5, label = "10th Percentile", color = "#D1509D")+
+#  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1550,size = 12 ,label = "High", color = "#02875E") +
+#  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1275,size = 12 ,label = "Uptake", color = "#02875E") +
+#  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1000,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^3,11^5))
+#ggsave(paste0(figOut,"LPS_DextranSort_wide.pdf"), width = 8.15, height = 4.2, units = "in")
+
+
+ggplot(LPS_uptake1_obs.f, aes(x = (MFI), y = ..count../sum(..count..), fill = ..x..)) +
+  geom_histogram(binwidth = .05, color = "grey70") +
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
-              labels = trans_format("log10", math_format(.x))) + 
-  scale_fill_gradient2(low = "#ad0060",high = "#008f67", midpoint = log10(LPS_quants[2]))  + theme_light() +labs(y = "Cells", x = bquote("Dextran Intensity, log"[10])) + theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), legend.text = element_text(size = 26), legend.position="null",plot.margin =unit(c(1,0,0,0),"cm")) + geom_vline(xintercept = LPS_quants[[1]],linetype = "dashed", color = "grey60", size = 2) + geom_vline(xintercept = LPS_quants[[3]],linetype = "dashed",color = "grey60", size = 2) + 
-  annotate("text",x = (LPS_quants[[1]] - 3750) , y = 1550,size = 12, label = "Low", color = "#D1509D")+
-  annotate("text",x = (LPS_quants[[1]] - 3750) , y = 1275,size = 12, label = "Uptake", color = "#D1509D")+
-  annotate("text",x = (LPS_quants[[1]] - 3750) , y = 1000,size = 8.5, label = "10th Percentile", color = "#D1509D")+
-  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1550,size = 12 ,label = "High", color = "#02875E") +
-  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1275,size = 12 ,label = "Uptake", color = "#02875E") +
-  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1000,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^3,11^5))
-ggsave(paste0(figOut,"LPS_DextranSort_wide.pdf"), width = 8.15, height = 4.2, units = "in")
-detach("package:tidyr", unload = TRUE)
-#detach("package:scales", unload = TRUE)
+              labels = trans_format("log10", math_format(.x))) + scale_y_continuous(labels = percent_format()) +
+  scale_fill_gradient2(low = "#ad0060",high = "#008f67", midpoint = log10(LPS_quants[2]))  + theme_light() +labs(y = "Cells, %", x = bquote("Dextran: Alexa Fluor 568, log"[10])) + theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), legend.text = element_text(size = 26), legend.position="null",plot.margin =unit(c(1,0,0,0),"cm")) + geom_vline(xintercept = LPS_quants[[1]],linetype = "dashed", color = "grey60", size = 2) + geom_vline(xintercept = LPS_quants[[3]],linetype = "dashed",color = "grey60", size = 2) + 
+  annotate("text",x = (LPS_quants[[1]] - 3750) , y = .085,size = 12, label = "Low", color = "#D1509D")+
+  annotate("text",x = (LPS_quants[[1]] - 3750) , y = .072,size = 12, label = "Uptake", color = "#D1509D")+
+  annotate("text",x = (LPS_quants[[1]] - 3750) , y = .060,size = 8.5, label = "10th Percentile", color = "#D1509D")+
+  annotate("text",x = (LPS_quants[[3]] + 44000) , y = .085,size = 12 ,label = "High", color = "#02875E") +
+  annotate("text",x = (LPS_quants[[3]] + 44000) , y = .072,size = 12 ,label = "Uptake", color = "#02875E") +
+  annotate("text",x = (LPS_quants[[3]] + 44000) , y = .060,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^3,11^5))
+ggsave(paste0(figOut,"LPS_DextranSort_wide_LPS_percent.pdf"), width = 8.15, height = 4.2, units = "in")
+
 ```
 
-```{r Dextran Uptake Annotated PCA}
+```{r Fig5b (bottom panel) Dextran Uptake Annotated PCA}
 #PCAout_NT_coords.df2 <- GOout_NT.df %>% left_join(PCAout_NT_coords.df, by = "id")
 #PCAout_NT_coords.df2$Condition <- "Untreated"
+
 Dextran_DIA_LPS_filt_Endocytic_lim$PG.ProteinAccessions
 Dextran_DIA_LPS_filt_AntiEndocytic_lim$PG.ProteinAccessions
+
 BC_unimp_LPS_PxC3.m_ProEndo <- BC_unimp_LPS_PxC3.m %>% 
     dplyr::filter(Var1 %in% Dextran_DIA_LPS_filt_Endocytic_lim$PG.ProteinAccessions) %>%
     dplyr::group_by(Var2) %>% dplyr::summarize(ProEndocytic = median(newVar,na.rm = TRUE))
@@ -2049,7 +2019,7 @@ MarkerDB_SCoPE2.join <- MarkerDB_SCoPE2 %>% left_join(SCoPE2_Human2Mouse,by = c(
 MarkerDB_SCoPE2.2 <- MarkerDB_SCoPE2.join %>% select(Entry, Type)
 ```
 
-```{r Fig 4b: correlation analysis for MEROPS peptides, message = FALSE, echo = FALSE, warning = FALSE}
+```{r Fig 6b: correlation analysis for MEROPS peptides, message = FALSE, echo = FALSE, warning = FALSE}
 # MEROPS peptides
 MEROPSvec <- c("P60710_DIG_10362102",	"Q9CZU6_DIG_55521","P60710_DIG_1036223","P60710_DIG_1036222")
 #************
@@ -2082,7 +2052,7 @@ db_bind.m$refName <- ifelse(db_bind.m$lab == "Internal","Bulk","Martinez, et al.
 db_bind.m$nLogQVal <- -log10(db_bind.m$qVal2)
 db_bind.m$nLogQVal_bin <- ifelse(db_bind.m$nLogQVal >= 3, 3,db_bind.m$nLogQVal)
 
-# Figure 4b
+# Figure 6b
 db_bind.m %>% ggplot(aes(x = factor(xLab,levels = c("Untreated","LPS-treated","M2","M1")), y = factor(EditedName,levels = rev(levelVec)), size = nLogQVal_bin, fill = value)) + geom_point(shape = 21, stroke = 1) + theme_light() + facet_wrap(~lab) + scale_fill_gradient2(low = "blue", mid = "white", high = "red",midpoint = 0,breaks=c(-.3,0,0.2)) + theme(axis.text.y = element_text(size = 18),axis.text.x = element_text(angle = 45, hjust = 1, size = 22), legend.title =element_text(size = 23.5), legend.text = element_text(size = 20,hjust =1),strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 24, color = "grey20", face = "bold"), axis.title.x = element_text(size = 34)) + labs(x = "Protein Sets",y="",fill = "Correlation",size = expression("-log"[10]~"(q val)")) + facet_wrap(~refName, scales = "free_x") +
   scale_size_continuous(breaks = seq(2,3,1),range=c(1,15),
                   limits = c(0, 3), labels = c("2",">3")) + scale_y_discrete(labels = c("Actin: L104, F1, cathepsin D" = "Fragment 1", "Citrate synthase: H25, F2, cathepsin E" =  "Fragment 2", "Actin: L299, F2, cathepsin D" = "Fragment 2", "Actin: L299, F1, cathepsin D" = "Fragment 1") )
@@ -2135,9 +2105,9 @@ CxP.m_sum3.lim2 <- CxP.m_sum3.lim %>% dplyr::select(variable,names,ratio)
 colnames(CxP.m_sum3.lim2) <- c("UniProt","Desc","log2Ratio")
 CxP.m_sum3.lim2$Lab <- "Single Cell"
 CxP.m_sum3.lim2$Desc <- str_sub(CxP.m_sum3.lim2$Desc, start =2)
-```
 
-```{r Fig 6a: Plot output}
+# Generating plot 6a: agreement between bulk and single-cell measurements
+
 DIA.j.mat.CNRN.df_sel <- DIA.j.mat.CNRN.df %>% filter(SeqCharge %in% c("_[+C15+H25+N3+O3]LTEAPLNPK_2","_[+C15+H25+N3+O3]ASASSTNLK_2","_[+C15+H25+N3+O3]SGGTTM[Oxidation (M)]YPGIADR_3"))
 DIA.j.mat.CNRN.df_sel$joinDef <- gsub(";.*","",DIA.j.mat.CNRN.df_sel$PG.ProteinDescriptions)
 DIA.j.mat.CNRN.df_sel$joinDef <- gsub("Half.*","",DIA.j.mat.CNRN.df_sel$joinDef)
@@ -2224,6 +2194,7 @@ ggsave(paste0(figOut,"MEROPS_PCA_Fig2E_v2.pdf"), width = 10, height = 4.25, unit
 ((ActL299_F1_v2) + plot_spacer() + (ActL104_v2)) + plot_layout(widths = c(1,0.5,1), guides = "collect") & theme(legend.position = "right")
 ggsave(paste0(figOut,"MEROPS_PCA_Fig2E_v2_legend.pdf"), width = 10, height = 4.25, units = "in")
 ```
+
 
 
 # %%%%%%%%%%%%%%%%%%%%%%
@@ -3402,3 +3373,8 @@ NT_Anti_scatter + plot_spacer() + NT_Pro_scatter + plot_layout(widths = c(5,0.75
 ggsave(paste0(figOut,"EndoPCA_NT_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
 
 ```
+
+
+
+
+
