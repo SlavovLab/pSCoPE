@@ -470,9 +470,12 @@ theme_missingData_tickChart <- function() {
 ```
 
 ```{r Input/Output paths}
+# The directory of figure-generating files downloaded from the Massive repo:
 datIn <- "C:/MyMSMS/SCoPE/t-SCoPE/code/pSCoPE_FigGen_1022/datIn/"
 
+# Your preferred path, here:
 FigOut <- "C:/MyMSMS/SCoPE/t-SCoPE/code/pSCoPE_FigGen_1022/FigOut/"
+# your preferred path, here:
 datOut <- "C:/MyMSMS/SCoPE/t-SCoPE/code/pSCoPE_FigGen_1022/DatOut/"
 ```
 
@@ -1692,7 +1695,7 @@ PM_PCA <- PCAout_both_coords2 %>% ggplot(aes(x = PC1, y = PC2, color = Phagosome
 AbundancePCAs <- (IFN_PCA + PM_PCA) + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 AbundancePCAs & theme(plot.margin =  margin(0, 0, 0, 0, "cm"))
-ggsave(paste0(figOut,"xCond_PSEA_PCs_horiz_v3.pdf"), width = 6, height = 4.5, units = "in")
+ggsave(paste0(FigOut,"xCond_PSEA_PCs_horiz_v3.pdf"), width = 6, height = 4.5, units = "in")
 ```
 
 ```{r Fig 4a: treatment-condition PCA with bulk}
@@ -1725,7 +1728,7 @@ theme(axis.title = element_text(size = 24), axis.text = element_text(size = 22),
   annotate("text", x = 5.1, y = 6,size = 7, label = "LPS-treated", color = "#F8766D") + 
   annotate("text", x = -5, y = 6,size = 7, label = "Untreated", color = "#00BFC4") + 
   guides(color = "none",fill = "none", size = "none",alpha = "none") + labs(shape = "",x="PC1",y = "PC2") 
-ggsave(paste0(figOut,"celltypePlusBulk.pdf"), width = 5, height = 5, units = "in")
+ggsave(paste0(FigOut,"celltypePlusBulk.pdf"), width = 5, height = 5, units = "in")
 ```
 
 ```{r Fig4b: PC-weight-based PCA result clustering and fig-gen}
@@ -1750,7 +1753,7 @@ xcond.f_fdr %>% ggplot(aes(x = PC, y = factor(str_wrap(Process, width = 30), lev
   scale_size_continuous(breaks = seq(2,3,1),range=c(1,20),
                   limits = c(0, 4), labels = c("2",">3")) +  scale_x_discrete(limits = c("1",
      "2","3","4","5"), expand=c(0.1, 0)) 
-ggsave(paste0(figOut,"xCond_PC_PSEA_legendBottom.pdf"), width = 7.75, height = 10, units = "in")
+ggsave(paste0(FigOut,"xCond_PC_PSEA_legendBottom.pdf"), width = 7.75, height = 10, units = "in")
 ```
 
 #---------------
@@ -1787,7 +1790,7 @@ Joint_PC_PSEA$Condition2 <- ifelse(Joint_PC_PSEA$Condition == "LPS","LPS-treated
 Joint_PC_PSEA %>% dplyr::filter(PC != 6) %>% ggplot(aes(x = factor(Condition2, levels = c("Untreated","LPS-treated")), y =reorder(str_wrap(Process, width = 30), -Ind),fill = (Association), size = nLog_bin)) + geom_point(shape = 21, stroke = 1) + scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) + theme_light() + labs(fill = "Loading\nz-score", y = "",x = "",size = bquote("-log"[10]~"(q val)")) + theme(axis.text.y = element_text(size = 20),axis.text.x = element_text(angle = 45, hjust = 1, size = 16), legend.title =element_text(size = 28), legend.text = element_text(size = 20, hjust = 0.4),strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 22, color = "grey20", face = "bold"), axis.title.x = element_text(size = 18), legend.position = "bottom", legend.box="vertical", legend.margin=margin(),plot.margin=unit(c(0,1,0,0),"cm")) + facet_wrap(~PC_lab,nrow = 1) + scale_color_manual(values = c("red","blue")) +
   scale_size_continuous(breaks = seq(2,3,1),range=c(3,15),
                   limits = c(1, 4), labels = c("2","> 3"))
-ggsave(paste0(figOut,"CondComp_PC_PSEA_v3.pdf"), width = 9, height = 9, units = "in")
+ggsave(paste0(FigOut,"CondComp_PC_PSEA_v3.pdf"), width = 9, height = 9, units = "in")
 ```
 
 
@@ -1827,7 +1830,7 @@ PCAout_LPS_coords.df2$Condition <- "LPS-treated"
 ProtonNT <- PCAout_NT_coords.df2 %>% ggplot(aes(x = -PC1, y = PC2, color =`proton transport`)) + geom_point(size = 3, alpha = 0.7, shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint=0) + theme_light() + theme(plot.title = element_text(size = 28), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 28), strip.text = element_text(size = 24),strip.background = element_rect(color = "grey40",fill = "grey40"))  + labs(x = "PC1", color = "")+ theme(legend.position = "null") + ggtitle("Proton Transport") + facet_wrap(~Condition, strip.position="top")
 ProtonLPS <- PCAout_LPS_coords.df2 %>% ggplot(aes(x = PC1, y = PC2, color =`proton transport`)) + geom_point(size = 3, alpha = 0.7, shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint=0) + theme_light() +theme(plot.title = element_text(size = 28), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 28), strip.text = element_text(size = 24),strip.background = element_rect(color = "grey40",fill = "grey40")) + labs(color = "")+ theme(legend.position = "null") + ggtitle("Proton Transport")+ facet_wrap(~Condition, strip.position="top")
 (ProtonNT + ProtonLPS) + plot_layout(guides = 'collect') & theme(legend.position = "null")
-ggsave(paste0(figOut,"Proton_v2.pdf"), width = 8, height = 4, units = "in")
+ggsave(paste0(FigOut,"Proton_v2.pdf"), width = 8, height = 4, units = "in")
 ```
 
 ```{r Protein names from original FASTA file}
@@ -1877,7 +1880,7 @@ Dextran_DIA_LPS2$negLog_q <- -log10(Dextran_DIA_LPS2$FC_qval)
 Dextran_DIA_LPS2$negLog_q_bin <- ifelse(Dextran_DIA_LPS2$negLog_q >= 30, 30,Dextran_DIA_LPS2$negLog_q)
 
 Dextran_DIA_LPS2 %>% ggplot(aes(x = -median_prot_FC, y = negLog_q_bin, color = factor(Labs, levels = c("High uptake","Low uptake","Not significant")))) + geom_point(shape = 16,size = 5,alpha = 0.7) + theme_light() + labs(x = bquote("High / low uptake, log"[2]), y = bquote("-log"[10]~"(q val)"), color = "") + scale_color_manual(values = c("#009E73", "#CC79A7","#888888"))+ theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)), legend.text = element_text(size = 28), legend.title = element_blank(), legend.position="null",plot.margin = unit(c(1,0,0,0),"cm")) + geom_text_repel(aes(label = GeneLab2),size = 8, color = "black",min.segment.length = unit(0.33, "lines")) + coord_cartesian(xlim = c(-6.5,6.5), ylim = c(0,33))
-ggsave(paste0(figOut,"LPS_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
+ggsave(paste0(FigOut,"LPS_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
 ```
 
 ```{r Fig5b (Top Panel) Dextran Uptake Sorting histogram}
@@ -1906,7 +1909,7 @@ LPS_quants <- (quantile((LPS_uptake1_obs.f$MFI),c(.1,.5,.9)))
 #  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1550,size = 12 ,label = "High", color = "#02875E") +
 #  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1275,size = 12 ,label = "Uptake", color = "#02875E") +
 #  annotate("text",x = (LPS_quants[[3]] + 44000) , y = 1000,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^3,11^5))
-#ggsave(paste0(figOut,"LPS_DextranSort_wide.pdf"), width = 8.15, height = 4.2, units = "in")
+#ggsave(paste0(FigOut,"LPS_DextranSort_wide.pdf"), width = 8.15, height = 4.2, units = "in")
 
 
 ggplot(LPS_uptake1_obs.f, aes(x = (MFI), y = ..count../sum(..count..), fill = ..x..)) +
@@ -1920,7 +1923,7 @@ ggplot(LPS_uptake1_obs.f, aes(x = (MFI), y = ..count../sum(..count..), fill = ..
   annotate("text",x = (LPS_quants[[3]] + 44000) , y = .085,size = 12 ,label = "High", color = "#02875E") +
   annotate("text",x = (LPS_quants[[3]] + 44000) , y = .072,size = 12 ,label = "Uptake", color = "#02875E") +
   annotate("text",x = (LPS_quants[[3]] + 44000) , y = .060,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^3,11^5))
-ggsave(paste0(figOut,"LPS_DextranSort_wide_LPS_percent.pdf"), width = 8.15, height = 4.2, units = "in")
+ggsave(paste0(FigOut,"LPS_DextranSort_wide_LPS_percent.pdf"), width = 8.15, height = 4.2, units = "in")
 
 ```
 
@@ -1953,7 +1956,7 @@ LPS_Anti_scatter <- PCAout_LPS_coords.df_endo %>% ggplot(aes(x = PC1,y = PC2, co
 LPS_Pro_scatter <- PCAout_LPS_coords.df_endo %>% ggplot(aes(x = PC1,y = PC2, color = ProEndocytic)) + geom_point(shape = 16, size = 5, alpha = 0.75) + scale_color_gradient2(low = "blue",mid = "white", high = "red", midpoint = 0) + theme_light() + labs(x = "PC1", y = "PC2")  + theme(plot.title = element_text(size = 32, color = "#02875E"), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 32)) + ggtitle("High Uptake\nProteins")
 
 LPS_Anti_scatter + plot_spacer() + LPS_Pro_scatter + plot_layout(widths = c(5,0.75,5))
-ggsave(paste0(figOut,"EndoPCA_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
+ggsave(paste0(FigOut,"EndoPCA_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
 ```
 
 #---------------
@@ -2031,8 +2034,8 @@ MEROPSvec <- c("P60710_DIG_10362102",	"Q9CZU6_DIG_55521","P60710_DIG_1036223","P
 #SCoPE2_markOut <- CorPermutation(BC_unImp_CxP,MarkerDB_SCoPE2.2,"SCoPE2")
 #************
 #Uncomment these lines to store your results
-#write.table(Ratio_markOut,paste0(figOut,"Ratio_markOut.txt"))
-#write.table(SCoPE2_markOut,paste0(figOut,"SCoPE2_markOut.txt"))
+#write.table(Ratio_markOut,paste0(FigOut,"Ratio_markOut.txt"))
+#write.table(SCoPE2_markOut,paste0(FigOut,"SCoPE2_markOut.txt"))
 
 #Read in previously generated correlation results
 Ratio_markOut <- read.table(paste0(datPath,"Ratio_markOut.txt"))
@@ -2056,7 +2059,7 @@ db_bind.m$nLogQVal_bin <- ifelse(db_bind.m$nLogQVal >= 3, 3,db_bind.m$nLogQVal)
 db_bind.m %>% ggplot(aes(x = factor(xLab,levels = c("Untreated","LPS-treated","M2","M1")), y = factor(EditedName,levels = rev(levelVec)), size = nLogQVal_bin, fill = value)) + geom_point(shape = 21, stroke = 1) + theme_light() + facet_wrap(~lab) + scale_fill_gradient2(low = "blue", mid = "white", high = "red",midpoint = 0,breaks=c(-.3,0,0.2)) + theme(axis.text.y = element_text(size = 18),axis.text.x = element_text(angle = 45, hjust = 1, size = 22), legend.title =element_text(size = 23.5), legend.text = element_text(size = 20,hjust =1),strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 24, color = "grey20", face = "bold"), axis.title.x = element_text(size = 34)) + labs(x = "Protein Sets",y="",fill = "Correlation",size = expression("-log"[10]~"(q val)")) + facet_wrap(~refName, scales = "free_x") +
   scale_size_continuous(breaks = seq(2,3,1),range=c(1,15),
                   limits = c(0, 3), labels = c("2",">3")) + scale_y_discrete(labels = c("Actin: L104, F1, cathepsin D" = "Fragment 1", "Citrate synthase: H25, F2, cathepsin E" =  "Fragment 2", "Actin: L299, F2, cathepsin D" = "Fragment 2", "Actin: L299, F1, cathepsin D" = "Fragment 1") )
-ggsave(paste0(figOut,"Internal_and_SCoPE2_DB_MEROPS_v8.pdf"), width = 9, height = 5.25)
+ggsave(paste0(FigOut,"Internal_and_SCoPE2_DB_MEROPS_v8.pdf"), width = 9, height = 5.25)
 ```
 
 ```{r Fig 6a: Agreement between bulk and single-cell measurements}
@@ -2122,13 +2125,13 @@ Bulk_and_SC2 <- Bulk_and_SC
 Bulk_and_SC2 <- Bulk_and_SC %>% dplyr::group_by(Desc3,Lab) %>% dplyr::summarize(log2Ratio2 = mean(log2Ratio, na.rm = TRUE))
 FacetOrder <- c("Actin: L104\ncathepsin D","Citrate synthase: H25\ncathepsin E","Actin: L299\ncathepsin D")
 #Bulk_and_SC2 %>% ggplot(aes(y = 1,x = Lab, fill = (log2Ratio2))) + geom_tile() + scale_fill_gradient2(limits = c(-.5,.5),low = "blue", mid = "white", high = "red", midpoint = 0) + labs(y = "", x = "") + facet_wrap(~factor(Desc3, levels = FacetOrder), ncol = 1) + labs(fill = expression("Log"[2]~"(LPS:Untreated)")) + theme_light() + theme(axis.text = element_text(size = 18), axis.text.y = element_blank(), strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 22, color = "grey20", face = "bold"), legend.position = "bottom", legend.text = element_text(size = 14, angle = 45, hjust = 1), legend.title = element_text(size = 16))
-#ggsave(paste0(figOut,"BulkAndSC_Val_v2.png"), width = 6, height = 8)
+#ggsave(paste0(FigOut,"BulkAndSC_Val_v2.png"), width = 6, height = 8)
 
 Top2 <- Bulk_and_SC2 %>% filter(Desc3 %in% c("Actin: L104\ncathepsin D","Citrate synthase: H25\ncathepsin E")) %>% ggplot(aes(y = 1,x = Lab, fill = (log2Ratio2))) + geom_tile() + scale_fill_gradient2(limits = c(-.5,.5),low = "blue", mid = "white", high = "red", midpoint = 0) + labs(y = "", x = "") + facet_wrap(~factor(Desc3, levels = FacetOrder), ncol = 1) + labs(fill = expression("Log"[2]~"(LPS:Untreated)")) + theme_light() + theme( axis.text = element_blank(), strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 18, color = "grey20", face = "bold"), legend.position = "bottom", legend.text = element_text(size = 14, angle = 45, hjust = 1),panel.spacing.y=unit(0, "lines"), legend.title = element_text(size = 16))
 
 BottomFacet <- Bulk_and_SC2 %>% filter(!(Desc3 %in% c("Actin: L104\ncathepsin D","Citrate synthase: H25\ncathepsin E"))) %>% ggplot(aes(y = 1,x = Lab, fill = (log2Ratio2))) + geom_tile() + scale_fill_gradient2(limits = c(-.5,.5),low = "blue", mid = "white", high = "red", midpoint = 0) + labs(y = "", x = "") + facet_wrap(~factor(Desc3, levels = FacetOrder), ncol = 1) + labs(fill = expression("Log"[2]~"(LPS:Untreated)")) + theme_light() + theme(axis.text = element_text(size = 16), axis.text.y = element_blank(), strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 18, color = "grey20", face = "bold"), legend.position = "bottom", legend.text = element_text(size = 14, angle = 45, hjust = 1), legend.title = element_text(size = 16),plot.margin = unit(c(0.0,0,0.3,0),"cm"))
 Top2 / BottomFacet + plot_layout(guides = "collect",heights = c(3,1.5)) & theme(legend.position = "bottom",plot.margin =  margin(0, 0, 0, 0, "cm")) 
-ggsave(paste0(figOut,"BulkAndSC_Val_v3_2part_v4.pdf"), width = 4, height = 5.25)
+ggsave(paste0(FigOut,"BulkAndSC_Val_v3_2part_v4.pdf"), width = 4, height = 5.25)
 ```
 
 ```{r fig6c: PCA color-coded by MEROPS peptide abundances}
@@ -2189,10 +2192,10 @@ ActL104_v2 <- PC_both_coords_Actin_L104_F1 %>% ggplot(aes(x = PC1, y = PC2, colo
   labs(color = "Abundance\nz-score", size = "")
 
 ((ActL299_F1_v2) + plot_spacer() + (ActL104_v2)) + plot_layout(widths = c(1,0.3,1), guides = "collect") & theme(legend.position = "null")
-ggsave(paste0(figOut,"MEROPS_PCA_Fig2E_v2.pdf"), width = 10, height = 4.25, units = "in")
+ggsave(paste0(FigOut,"MEROPS_PCA_Fig2E_v2.pdf"), width = 10, height = 4.25, units = "in")
 
 ((ActL299_F1_v2) + plot_spacer() + (ActL104_v2)) + plot_layout(widths = c(1,0.5,1), guides = "collect") & theme(legend.position = "right")
-ggsave(paste0(figOut,"MEROPS_PCA_Fig2E_v2_legend.pdf"), width = 10, height = 4.25, units = "in")
+ggsave(paste0(FigOut,"MEROPS_PCA_Fig2E_v2_legend.pdf"), width = 10, height = 4.25, units = "in")
 ```
 
 
@@ -3182,14 +3185,14 @@ PhagosomeMat <- PC_coords_PSabund %>% ggplot(aes(x = -PC1, y = -PC2, color = `ph
 #%%%%%%%%%%
 
 celltype_unImp 
-ggsave(paste0(figOut,"unimp_PCA_celltype_header.pdf"), width = 5.5, height = 5.5, units = "in")
+ggsave(paste0(FigOut,"unimp_PCA_celltype_header.pdf"), width = 5.5, height = 5.5, units = "in")
   
 #%%%%%%%%%%
 #EDF7 (right panel)
 #%%%%%%%%%%
 
 (typeIIFN + PhagosomeMat) + plot_layout(guides = "collect", widths = c(1,1)) & theme(legend.position = "bottom", legend.text = element_text(size = 14),legend.title = element_text(size = 12)) 
-ggsave(paste0(figOut,"unimp_PCA_PSEA_footer_select.pdf"), width = 5.5, height = 3.75, units = "in")
+ggsave(paste0(FigOut,"unimp_PCA_PSEA_footer_select.pdf"), width = 5.5, height = 3.75, units = "in")
 ```
 
 # EDF 8: PCA of pSCoPE BMDM data color-coded by missingness
@@ -3219,7 +3222,7 @@ t0_pca$Completeness <- (1-t0_pca$fracMD)*100
 
 MD_pca <- t0_pca %>% ggplot(aes(x = PC1, y = PC2, color = Completeness)) + geom_point( size = 5, alpha = 0.7,shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 25) + theme_light() + labs(color = "Precursor-level\ndata completeness, %")  + theme(legend.position = "bottom")  + theme(legend.position = "bottom",legend.title = element_text(size = 14),legend.text = element_text(size = 14), axis.text = element_text(size = 18),axis.title = element_text(size = 24)) + labs(x = "PC1", y = "PC2")
 MD_pca
-#ggsave(paste0(figOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
+#ggsave(paste0(FigOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
 
 #%%%%%%%%%%%%%%%%%%
 # EDF8: PCA color-coded by protein-level missingness
@@ -3235,7 +3238,7 @@ MD_pca$Completeness <- (1-MD_pca$fracMD)*100
 medMD <- mean(MD_pca$Completeness)
 MD_pca_plot <- MD_pca %>% ggplot(aes(x = PC1, y = PC2, color = Completeness)) + geom_point( size = 5, alpha = 0.7,shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 40, breaks = c(20,40,60)) + theme_light() + labs(color = "Protein-level\ndata completeness, %")  + theme(legend.position = "bottom")  + theme(legend.position = "bottom",legend.title = element_text(size = 14),legend.text = element_text(size = 14), axis.text = element_text(size = 18),axis.title = element_text(size = 24)) + labs(x = "PC1", y = "PC2")
 MD_pca_plot
-ggsave(paste0(figOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
+ggsave(paste0(FigOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
 ```
 
 # EDF 9: Sorter info
@@ -3306,7 +3309,7 @@ ggplot(NT_uptake1_obs.f, aes(x = (MFI), y = ..count../sum(..count..), fill = ..x
   annotate("text",x = (NT_quants[[3]] + 46000) , y = .075,size = 12 ,label = "High", color = "#02875E") +
   annotate("text",x = (NT_quants[[3]] + 46000) , y = .062,size = 12 ,label = "Uptake", color = "#02875E") +
   annotate("text",x = (NT_quants[[3]] + 46000) , y = .050,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^2.5,11^5))
-ggsave(paste0(figOut,"DextranSort_wide_NT_percent.pdf"), width = 8.15, height = 4.2, units = "in")
+ggsave(paste0(FigOut,"DextranSort_wide_NT_percent.pdf"), width = 8.15, height = 4.2, units = "in")
 detach("package:tidyr", unload = TRUE)
 detach("package:scales", unload = TRUE)
 
@@ -3323,7 +3326,7 @@ Dextran_DIA_NT2$GeneLab3 <- ifelse(Dextran_DIA_NT2$Gene.names...primary.. %in% c
 Dextran_DIA_NT2$negLog_q <- -log10(Dextran_DIA_NT2$FC_qval)
 Dextran_DIA_NT2$negLog_q_bin <- ifelse(Dextran_DIA_NT2$negLog_q >= 30, 30,Dextran_DIA_NT2$negLog_q)
 Dextran_DIA_NT2 %>% ggplot(aes(x = -median_prot_FC, y = negLog_q_bin, color = factor(Labs, levels = c("High uptake","Low uptake","Not significant")))) + geom_point(shape = 16,size = 5,alpha = 0.7) + theme_light() + labs(x = bquote("High / low uptake, log"[2]), y = bquote("-log"[10]~"(q val)"), color = "") + scale_color_manual(values = c("#009E73", "#CC79A7","#888888"))+ theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)), legend.text = element_text(size = 28), legend.title = element_blank(), legend.position="null",plot.margin = unit(c(1,0,0,0),"cm")) + geom_text_repel(aes(label = GeneLab2),size = 8, color = "black",min.segment.length = unit(0.33, "lines")) + coord_cartesian(xlim = c(-6.5,6.5), ylim = c(0,33))
-ggsave(paste0(figOut,"NT_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
+ggsave(paste0(FigOut,"NT_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
 
 
 
@@ -3370,11 +3373,8 @@ NT_Anti_scatter <- PCAout_NT_coords.df_endo %>% ggplot(aes(x = PC1,y = PC4, colo
 NT_Pro_scatter <- PCAout_NT_coords.df_endo %>% ggplot(aes(x = PC1,y = PC4, color = ProEndocytic)) + geom_point(shape = 16, size = 5, alpha = 0.75) + scale_color_gradient2(low = "blue",mid = "white", high = "red", midpoint = 0) + theme_light() + labs(x = "PC1", y = "PC4")  + theme(plot.title = element_text(size = 32, color = "#02875E"), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 32)) + ggtitle("High Uptake\nProteins")
 
 NT_Anti_scatter + plot_spacer() + NT_Pro_scatter + plot_layout(widths = c(5,0.75,5))
-ggsave(paste0(figOut,"EndoPCA_NT_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
+ggsave(paste0(FigOut,"EndoPCA_NT_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
 
 ```
-
-
-
 
 
