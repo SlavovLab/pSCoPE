@@ -314,7 +314,11 @@ for(j in 1:(length(GO_terms))){
 return(WRS_test_out_full)
 }
 
-# Borrowed from SCoPE2 (Specht, et al.,)
+# Borrowed from SCoPE2
+#Specht, H. et al. Single-cell proteomic and transcriptomic analysis of macrophage hetero-
+#geneity using SCoPE2. Genome Biology 22. doi:10 . 1186 / s13059 - 021 - 02267 - 5
+#(2021).
+
 cr_norm_log<-function(dat){
   
   for(k in 1:ncol(dat)){
