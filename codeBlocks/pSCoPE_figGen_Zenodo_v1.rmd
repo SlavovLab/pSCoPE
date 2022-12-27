@@ -1887,7 +1887,7 @@ for (i in 1:length(GOtermsForCor)){
   
 } 
 
-selectedProcessForPlot <- c("proton transport","type I interferon-mediated signaling pathway","hydrogen peroxide catabolic process","mitochondrial electron transport, NADH to ubiquinone","S100 protein binding","hydrolase activity, hydrolyzing O-glycosyl compounds","phagocytosis","positive regulation of nitric oxide biosynthetic process")
+selectedProcessForPlot <- c("proton transport, V-type ATPase","type I interferon-mediated signaling pathway","hydrogen peroxide catabolic process","mitochondrial electron transport, NADH to ubiquinone","S100 protein binding","hydrolase activity, hydrolyzing O-glycosyl compounds","phagocytosis","positive regulation of nitric oxide biosynthetic process")
 
 ProcessOut.sel <- ProcessOut %>% filter(Process %in% selectedProcessForPlot)
 
@@ -1917,9 +1917,9 @@ coord_cartesian(xlim = c(-.75,1.5), ylim = c(-.7,3.5)) +
   scale_fill_manual(values = paletteRev) + 
   ggtitle(titleFormatted)
 Scatter
-ggsave("ScatterRevised_supplemental_v2.png", width =11, height = 11, units = "in")
+ggsave(paste0(FigOut,"ScatterRevised_supplemental_v2.png"), width =11, height = 11, units = "in")
 
-ProcessOut$MinimalLabels <- ifelse(ProcessOut$Process == "type I interferon-mediated signaling pathway","Type I IFN signaling",ifelse(ProcessOut$Process == "proton transport","Proton transport", "Other GO terms"))
+ProcessOut$MinimalLabels <- ifelse(ProcessOut$Process == "type I interferon-mediated signaling pathway","Type I IFN signaling",ifelse(ProcessOut$Process == "proton transport, V-type ATPase","Proton transport, V-type ATPase", "Other GO terms"))
 
 # Figure 4c
 
@@ -1927,10 +1927,10 @@ ProcessOut$Size <- ifelse(ProcessOut$MinimalLabels == "Other GO terms",4,8)
 ProcessOut$Size <- as.factor(ProcessOut$Size)
 
 ScatterFig4 <- ProcessOut %>% filter(Process %in% selectedProcessForPlot)  %>% arrange(rev(Process)) %>%
-  ggplot(aes(x=scRat,y =bulkRat, fill = factor(MinimalLabels, levels = c("Proton transport","Type I IFN signaling","Other GO terms")), size = Size)) + 
+  ggplot(aes(x=scRat,y =bulkRat, fill = factor(MinimalLabels, levels = c("Proton transport, V-type ATPase","Type I IFN signaling","Other GO terms")), size = Size)) + 
   geom_point(shape = 21, stroke = 1.5, alpha =0.5) + 
   theme_light() + labs(x = expression("Single Cells"), y = expression("Bulk")) +
-  theme(legend.position = c(0.38,0.82), 
+  theme(legend.position = c(0.5,0.87), 
         legend.title = element_blank(),
         legend.text = element_text(size = 18),
         legend.background = element_rect(fill = "transparent"),
@@ -1942,7 +1942,7 @@ coord_cartesian(xlim = c(-.55,1.5), ylim = c(-1,4)) +
   scale_size_manual("Size",values = c(3,8)) +
   guides(size = "none", fill = guide_legend(override.aes = list(size = 8)))
 ScatterFig4
-ggsave("ScatterRevised_Fig4c.pdf", width =5, height = 5, units = "in", device = cairo_pdf)
+ggsave(paste0(FigOut,"ScatterRevised_Fig4c.pdf"), width =5, height = 5, units = "in", device = cairo_pdf)
 
 ```
 
