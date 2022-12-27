@@ -1796,8 +1796,8 @@ GO_db_diffTest_df <- data.frame(GOTerm = character(), pVal = numeric(), foldChan
 
 #Identifying GO terms with differential abundance between conditions for single-cell samples
 
-for (i in 1:length(unique(GO_db.2$GO_term_name))){
-  GOTerm.single.name <- unique(GO_db.2$GO_term_name)[i]
+for (i in 1:length(unique(GO_db.3$GO_term_name))){
+  GOTerm.single.name <- unique(GO_db.3$GO_term_name)[i]
   GOTerm.single <- GO_db.3 %>% filter(GO_term_name == GOTerm.single.name)
   GOin.singleGOterm <- GOin %>% filter(Gene %in% GOTerm.single$Gene) %>% ungroup()
   GO_db_diffTest_df[i,1] <- GOTerm.single.name
@@ -1867,7 +1867,7 @@ bulkBC_imp.mat.m.dcast <- bulkBC_imp.mat.m.dcast %>% left_join(GeneMappings_sing
 GOtermsForCor <- c(unique(GO_db_diffTest_df.f.q$GOTerm),"proton transport","phagosome maturation","hydrogen peroxide catabolic process")
 
 for (i in 1:length(GOtermsForCor)){
-  DB.lim <- GO_db.2 %>% filter(GO_term_name %in% unique(GOtermsForCor)[i])
+  DB.lim <- GO_db.3 %>% filter(GO_term_name %in% unique(GOtermsForCor)[i])
   
   singleProcessHits <- bulkBC_imp.mat.m.dcast %>% filter(GENES %in% DB.lim$Gene)
   
