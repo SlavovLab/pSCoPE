@@ -2018,7 +2018,7 @@ ProtonPumpPair <- GOin.sel.dcast_proton.join %>% ggplot(aes(x = ATP6V1B2, y = AT
 ) +
 geom_text(data = corDF.bottom, aes(label = paste0("\u03C1: ",round(cor,2)), x = 1.1, y = -1.8), size = 10)  
 ProtonPumpPair
-ggsave("ProtonPumpPair.pdf", width = 7, height = 5, units = "in", device = cairo_pdf)
+ggsave(paste0(FigOut,"ProtonPumpPair.pdf"), width = 7, height = 5, units = "in", device = cairo_pdf)
 
 #
 # Supplemental Accompaniment: ATPase correlation heatmap
@@ -2106,7 +2106,7 @@ CorUnHeat <- corUn.forHeat %>% ggplot(aes(x = factor(var, levels = CorLev), y = 
 
 CorUnHeat + CorLPSHeat  + plot_layout(widths = c(4,4), guides = "collect") & theme(legend.position = 'bottom', legend.text = element_text(size =22, angle = 45, hjust = 1),                  legend.title = element_text(size = 40),                
 legend.key.size = unit(0.5, "in")) 
-ggsave("ProtonPump_CorHeat_Supplemental.pdf", width = 11, height = 7.33, units = "in", device = cairo_pdf)
+ggsave(paste0(FigOut,"ProtonPump_CorHeat_Supplemental.pdf"), width = 11, height = 7.33, units = "in", device = cairo_pdf)
 
 ```
 
