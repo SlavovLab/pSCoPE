@@ -15,6 +15,7 @@ output: html_notebook
 #install.packages(seqinr)
 #install.packages(ggpubr)
 #install.packages(scales)
+#install.packages(Hmisc)
 
 library(dplyr)
 library(ggplot2)
