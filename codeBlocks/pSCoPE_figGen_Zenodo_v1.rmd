@@ -5,16 +5,16 @@ output: html_notebook
 
 ```{r libraries}
 #uncomment and install any packages, if necessary
-#install(dplyr)
-#install(ggplot2)
-#install(reshape2)
-#install(stringr)
-#install(patchwork)
-#install(matrixStats)
-#install(ggrepel)
-#install(seqinr)
-#install(ggpubr)
-#install(scales)
+#install.packages(dplyr)
+#install.packages(ggplot2)
+#install.packages(reshape2)
+#install.packages(stringr)
+#install.packages(patchwork)
+#install.packages(matrixStats)
+#install.packages(ggrepel)
+#install.packages(seqinr)
+#install.packages(ggpubr)
+#install.packages(scales)
 
 library(dplyr)
 library(ggplot2)
