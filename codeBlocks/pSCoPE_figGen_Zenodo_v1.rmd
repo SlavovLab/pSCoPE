@@ -5,17 +5,17 @@ output: html_notebook
 
 ```{r libraries}
 #uncomment and install any packages, if necessary
-#install.packages(dplyr)
-#install.packages(ggplot2)
-#install.packages(reshape2)
-#install.packages(stringr)
-#install.packages(patchwork)
-#install.packages(matrixStats)
-#install.packages(ggrepel)
-#install.packages(seqinr)
-#install.packages(ggpubr)
-#install.packages(scales)
-#install.packages(Hmisc)
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("reshape2")
+#install.packages("stringr")
+#install.packages("patchwork")
+#install.packages("matrixStats")
+#install.packages("ggrepel")
+#install.packages("seqinr")
+#install.packages("ggpubr")
+#install.packages("scales")
+#install.packages("Hmisc")
 
 library(dplyr)
 library(ggplot2)
