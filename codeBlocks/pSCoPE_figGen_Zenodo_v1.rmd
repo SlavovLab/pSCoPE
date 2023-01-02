@@ -662,7 +662,7 @@ ProtsBox <- TargContrast_prot %>% filter(Platform!= "Omit") %>% ggplot(aes(x = n
 
  
 ID_dists.top2 + plot_spacer() + ProtsBox + plot_layout(widths = c(4, 0.3 ,4))
-ggsave(paste0(FigOut,"Technical2_7c_consistency_coverage_MQLcontrast.pdf"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig1b_consistency_coverage_MQLcontrast.pdf"), width = 7, height = 5, units = "in")
 
 #TargContrast_prot_sum <- TargContrast_prot %>% group_by(Platform) %>% summarize(medVal = median(numProts, na.rm = TRUE))
 ```
@@ -788,7 +788,7 @@ CollectedContrast %>% filter(Type == "Prioritization") %>% ggplot(aes(value*100,
   labs(color = "", x = "Prioritized Peptides, %",y = "") + 
   facet_wrap(~factor(Title,levels = c("High","Medium","Low","RT only")), nrow = 1)+
   scale_color_manual(values = c("firebrick4","red")) + geom_text( x = 15, y = 1.5,color = "grey10",aes(label = paste0(comma(TargCount))), size = 10)  + geom_text( x = 12, y = 1.5,color = "grey10",aes(label = paste0("\nPrecursors")), size = 6)
-ggsave(paste0(FigOut,"Rebuttal_coverage_MQliveStats_Legend.pdf"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig1c_Rebuttal_coverage_MQliveStats_Legend.pdf"), width = 7, height = 5, units = "in")
 
 detach("package:scales", unload=TRUE)
 
@@ -916,7 +916,7 @@ Cov_Prot_box <- MDp_join_sum %>% ggplot(aes( numProts, color = factor(Method, le
 MDp_join_sum_tally <- MDp_join_sum %>% group_by(Method) %>% summarize(count = n())
 
 ProdScans1 + PepsPerRun + Cov_Prot_box  + plot_layout(widths = c(1,1,1), guides = "collect") & theme(legend.position = 'null')
-ggsave(paste0(FigOut,"Coverage_Rebuttal_rev2_1pFDRMS2.pdf"), width = 7.2 , height = 5.1, units = "in")
+ggsave(paste0(FigOut,"Fig2a_Coverage_Rebuttal_rev2_1pFDRMS2.pdf"), width = 7.2 , height = 5.1, units = "in")
 
 
 
@@ -968,7 +968,7 @@ ContingencyTable_sum <- ContingencyTable_sum %>% left_join(IntComb.lim.sum.plat,
 
 ContingencyTable_sum %>% ggplot(aes(x = as.numeric(Start), y = meanFreq, color = Platform, group = Platform)) + geom_line(size = 2) + geom_point(size = 3, shape = 21, fill = "white", color = "grey30") + theme_light() + theme(legend.position = "null", strip.text = element_text(size = 18, color = "black"), strip.background = element_rect(fill = "white", color = "grey70"), axis.text = element_text(size =20), axis.title = element_text(size = 22),plot.margin = margin(0,0,0,0.5, "cm")) + scale_color_manual(values = c("red","blue")) + labs(x =bquote('Log'[10]~ 'Precursor Intensity'), y = "Precursors") +
  geom_errorbar(aes(ymin = (meanFreq - sdFreq), ymax = (meanFreq + sdFreq)), color = "grey40") + scale_x_continuous(limits = c(5, 9.5), breaks = seq(5, 9.5, by = 1)) 
-ggsave(paste0(FigOut,"IntensityCurve_Rebuttal.pdf"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig2b_IntensityCurve_Rebuttal.pdf"), width = 7, height = 5, units = "in")
 ```
 
 ```{r Fig 2c}
@@ -1088,7 +1088,7 @@ cellHeatMap2 <- RefList_Both.m4 %>% ggplot(aes(x = Inds, y = reorder(pep,-numCel
 #+ ggtitle("High Priority Peptides")
 
 cellHeatMap2
-ggsave(paste0(FigOut,"TierHeatMap_Rebuttal_patchwork_fig_v4_noBlank.pdf"), width = 6.2 , height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig2c_TierHeatMap_Rebuttal_patchwork_fig_v4_noBlank.pdf"), width = 6.2 , height = 5, units = "in")
 ```
 
 ```{r Fig 2d}
@@ -1209,7 +1209,7 @@ Rebuttal_MP_both.m_combTiers_sum <- Rebuttal_MP_both.m_combTiers %>% group_by(Me
 
 PeptideMD + ProtMD_Box  + plot_layout(widths = c(2, 1))
 #ggsave("C:/My_Drive/MS/SCoPE/t-SCoPE/code/pSCoPE_pubFigs/Figs/TechnicalFig1/Pep_ProtMD_consistency_Rebuttal_fig_v3.pdf", width = 7 , height = 5, units = "in")
-ggsave(paste0(FigOut,"Pep_ProtMD_consistency_Rebuttal_fig_v4_completeness.pdf"), width = 7.5 , height = 5.1, units = "in")
+ggsave(paste0(FigOut,"Fig2d_Pep_ProtMD_consistency_Rebuttal_fig_v4_completeness.pdf"), width = 7.5 , height = 5.1, units = "in")
 ```
 
 ```{r Fig 2e: HEK and Melanoma PCA}
@@ -1320,7 +1320,7 @@ G2_melHEK_legend <- melHEK_PC_coord2.pSCoPE %>% ggplot(aes(x = PC1,y = PC2, colo
 
 
 cellType_melHEK_PCA +  Glycolysis_melHEK + G2_melHEK + plot_layout(nrow = 1)
-ggsave(paste0(FigOut,"HEK_Mel_PCA_composite_v2.pdf"), width = 16, height = 5.33, units = "in") 
+ggsave(paste0(FigOut,"Fig2e_HEK_Mel_PCA_composite_v2.pdf"), width = 16, height = 5.33, units = "in") 
 
 Glycolysis_melHEK_legend
 ggsave(paste0(FigOut,"HEK_Mel_PCA_forLegend.pdf"), width = 5.33, height = 5.33, units = "in") 
@@ -1388,7 +1388,7 @@ ContingencyFull$StartNum <- as.numeric(ContingencyFull$Start)
 ContingencyFull$FacetLab <- ifelse(ContingencyFull$Var2 == "Endogenous","Single cell","Spike in")
 
 ContingencyFull %>% ggplot(aes(y = Freq,x = StartNum)) + geom_col() + coord_flip() + facet_wrap(~FacetLab, scales="free_x") + theme_light() + labs(x = expression("Log"[10]~"(Reporter-Ion Intensity)"), y = "Fraction of Identified Peptides") + scale_x_continuous(limits = c(1, 6), breaks = seq(1, 6, by = 1)) + theme(axis.title.x = element_text(size =22),axis.title.y = element_text(size =23), axis.text = element_text(size = 20), axis.text.x = element_blank(), strip.background = element_rect( fill = "grey95", color = "grey70"), strip.text = element_text(color= "black", size = 22,face = "bold"))
-ggsave(paste0(FigOut,"SpikeInRII_violin_v2.pdf"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig3a_SpikeInRII_violin_v2.pdf"), width = 7, height = 5, units = "in")
 ```
 
 ```{r Fig 3b: Spike-in peptide quantitation}
@@ -1495,7 +1495,7 @@ evi_out_sumsum %>% ggplot(aes(x = medConc_rev , y = medVal)) + geom_point(size =
   scale_y_continuous(limits = c(-1, 5), breaks = seq(0, 4, by = 1)) +
   geom_text(data = evi_out_sum_count, aes(x = medConc_rev, y = 5, label = paste0("n=",countVal)), size = 7)
   #coord_cartesian(ylim = c(0,6))
-ggsave(paste0(FigOut,"RegressionAllData_RISeqComb_StandardFill_MedandPoints_v3_adjScale.pdf"), width = 7, 
+ggsave(paste0(FigOut,"Fig3b_RegressionAllData_RISeqComb_StandardFill_MedandPoints_v3_adjScale.pdf"), width = 7, 
        height = 7, units = "in")
 
 
@@ -1591,14 +1591,13 @@ GO_db.3 <- rbind(GO_db.3, GO.db.3.ProtonTransportLysosomal)
 
 
 ```{r BMDM PSEA test}
-
-# Run PC-weight-based PSEA (PC weights, reference database, number of PCs to evaluate)
+#************
+# Uncomment to Run PC-weight-based PSEA (PC weights, reference database, number of PCs to evaluate)
 #     Note: this function takes a number of minutes to evaluate
-
-
-xcond_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_both_weights,GO_db.3,5)
-LPS_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_LPS_weights,GO_db.3,4)
-NT_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_NT_weights,GO_db.3,4)
+#************
+#xcond_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_both_weights,GO_db.3,5)
+#LPS_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_LPS_weights,GO_db.3,4)
+#NT_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_NT_weights,GO_db.3,4)
 
 #************
 # Uncomment to save the results of the re-run analyses
@@ -1608,11 +1607,11 @@ NT_PSEA <- PCA_PSEA_Rebuttal_BMDM_prot(PCAout_NT_weights,GO_db.3,4)
 #write.table(NT_PSEA,paste0(datOut,"NT_only_PCAPSEA.txt"))
 
 #************
-# Uncomment to load your previously saved PC-weight-based PSEA results
+# Comment out when running PSEA function above 
 #************
-#xcond_PSEA <- read.table(paste0(datOut,"xCond2.txt"))
-#LPS_PSEA <- read.table(paste0(datOut,"LPS_only_PCAPSEA.txt"))
-#NT_PSEA <- read.table(paste0(datOut,"NT_only_PCAPSEA.txt"))
+xcond_PSEA <- read.table(paste0(datPath,"xCond2.txt"))
+LPS_PSEA <- read.table(paste0(datPath,"LPS_only_PCAPSEA.txt"))
+NT_PSEA <- read.table(paste0(datPath,"NT_only_PCAPSEA.txt"))
 
 ```
 
@@ -1706,7 +1705,7 @@ PM_PCA <- PCAout_both_coords2 %>% ggplot(aes(x = PC1, y = PC2, color = Phagosome
 AbundancePCAs <- (IFN_PCA + PM_PCA) + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 AbundancePCAs & theme(plot.margin =  margin(0, 0, 0, 0, "cm"))
-ggsave(paste0(FigOut,"xCond_PSEA_PCs_horiz_v3.pdf"), width = 6, height = 4.5, units = "in")
+ggsave(paste0(FigOut,"Fig4a_xCond_PSEA_PCs_horiz_v3.pdf"), width = 6, height = 4.5, units = "in")
 ```
 
 ```{r Fig 4a: treatment-condition PCA with bulk}
@@ -1739,7 +1738,7 @@ theme(axis.title = element_text(size = 24), axis.text = element_text(size = 22),
   annotate("text", x = 5.1, y = 6,size = 7, label = "LPS-treated", color = "#F8766D") + 
   annotate("text", x = -5, y = 6,size = 7, label = "Untreated", color = "#00BFC4") + 
   guides(color = "none",fill = "none", size = "none",alpha = "none") + labs(shape = "",x="PC1",y = "PC2") 
-ggsave(paste0(FigOut,"celltypePlusBulk.pdf"), width = 5, height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig4a_celltypePlusBulk.pdf"), width = 5, height = 5, units = "in")
 ```
 
 ```{r Fig4b: PC-weight-based PCA result clustering and fig-gen}
@@ -1772,7 +1771,7 @@ xcond.f_fdr %>% ggplot(aes(x = PC, y = factor(str_wrap(Process, width = 30), lev
                   limits = c(0, 4), labels = c("2",">3")) +  
   scale_x_discrete(limits = c("1",
      "2","3","4","5"), expand=c(0.1, 0)) 
-ggsave(paste0(FigOut,"xCond_PC_PSEA_legendBottom.pdf"), width = 7.75, height = 10, units = "in")
+ggsave(paste0(FigOut,"Fig4b_xCond_PC_PSEA_legendBottom.pdf"), width = 7.75, height = 10, units = "in")
 ```
 ```{r figure 4c and associated supplemental figure}
 prePCA_BMDM <- read.csv(paste0(datPath,"limmaCorrected_normed_prePCA_Priori_mrri02_PIF50_DART_1pFDR.csv"),row.names = "X")
@@ -1918,7 +1917,7 @@ coord_cartesian(xlim = c(-.75,1.5), ylim = c(-.7,3.5)) +
   scale_fill_manual(values = paletteRev) + 
   ggtitle(titleFormatted)
 Scatter
-ggsave(paste0(FigOut,"ScatterRevised_supplemental_v2.png"), width =11, height = 11, units = "in")
+ggsave(paste0(FigOut,"Fig_S2_ScatterRevised_supplemental_v2.png"), width =11, height = 11, units = "in")
 
 ProcessOut$MinimalLabels <- ifelse(ProcessOut$Process == "type I interferon-mediated signaling pathway","Type I IFN signaling",ifelse(ProcessOut$Process == "proton transport, V-type ATPase","Proton transport, V-type ATPase", "Other GO terms"))
 
@@ -1943,7 +1942,7 @@ coord_cartesian(xlim = c(-.55,1.5), ylim = c(-1,4)) +
   scale_size_manual("Size",values = c(3,8)) +
   guides(size = "none", fill = guide_legend(override.aes = list(size = 8)))
 ScatterFig4
-ggsave(paste0(FigOut,"ScatterRevised_Fig4c.pdf"), width =5, height = 5, units = "in", device = cairo_pdf)
+ggsave(paste0(FigOut,"Fig4c_ScatterRevised.pdf"), width =5, height = 5, units = "in", device = cairo_pdf)
 
 ```
 
@@ -2019,7 +2018,7 @@ ProtonPumpPair <- GOin.sel.dcast_proton.join %>% ggplot(aes(x = ATP6V1B2, y = AT
 ) +
 geom_text(data = corDF.bottom, aes(label = paste0("\u03C1: ",round(cor,2)), x = 1.1, y = -1.8), size = 10)  
 ProtonPumpPair
-ggsave(paste0(FigOut,"ProtonPumpPair.pdf"), width = 7, height = 5, units = "in", device = cairo_pdf)
+ggsave(paste0(FigOut,"Fig4d_ProtonPumpPair.pdf"), width = 7, height = 5, units = "in", device = cairo_pdf)
 
 #
 # Supplemental Accompaniment: ATPase correlation heatmap
@@ -2107,7 +2106,7 @@ CorUnHeat <- corUn.forHeat %>% ggplot(aes(x = factor(var, levels = CorLev), y = 
 
 CorUnHeat + CorLPSHeat  + plot_layout(widths = c(4,4), guides = "collect") & theme(legend.position = 'bottom', legend.text = element_text(size =22, angle = 45, hjust = 1),                  legend.title = element_text(size = 40),                
 legend.key.size = unit(0.5, "in")) 
-ggsave(paste0(FigOut,"ProtonPump_CorHeat_Supplemental.pdf"), width = 11, height = 7.33, units = "in", device = cairo_pdf)
+ggsave(paste0(FigOut,"FigS3_ProtonPump_CorHeat_Supplemental.pdf"), width = 11, height = 7.33, units = "in", device = cairo_pdf)
 
 ```
 
@@ -2161,7 +2160,7 @@ Joint_PC_PSEA %>% dplyr::filter(PC != 6) %>% ggplot(aes(x = factor(Condition2, l
   scale_color_manual(values = c("red","blue")) +
   scale_size_continuous(breaks = seq(2,3,1),range=c(3,15),
                   limits = c(1, 4), labels = c("2","> 3"))
-ggsave(paste0(FigOut,"CondComp_PC_PSEA_v3.pdf"), width = 9, height = 9, units = "in")
+ggsave(paste0(FigOut,"Fig5a_CondComp_PC_PSEA_v3.pdf"), width = 9, height = 9, units = "in")
 ```
 
 
@@ -2201,7 +2200,7 @@ PCAout_LPS_coords.df2$Condition <- "LPS-treated"
 ProtonNT <- PCAout_NT_coords.df2 %>% ggplot(aes(x = -PC1, y = PC2, color =`proton transport, V-type ATPase`)) + geom_point(size = 3, alpha = 0.7, shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint=0) + theme_light() + theme(plot.title = element_text(size = 28), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 28), strip.text = element_text(size = 24),strip.background = element_rect(color = "grey40",fill = "grey40"))  + labs(x = "PC1", color = "")+ theme(legend.position = "null") + ggtitle("Proton Transport") + facet_wrap(~Condition, strip.position="top")
 ProtonLPS <- PCAout_LPS_coords.df2 %>% ggplot(aes(x = PC1, y = PC2, color =`proton transport, V-type ATPase`)) + geom_point(size = 3, alpha = 0.7, shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint=0) + theme_light() +theme(plot.title = element_text(size = 28), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 28), strip.text = element_text(size = 24),strip.background = element_rect(color = "grey40",fill = "grey40")) + labs(color = "")+ theme(legend.position = "null") + ggtitle("Proton Transport")+ facet_wrap(~Condition, strip.position="top")
 (ProtonNT + ProtonLPS) + plot_layout(guides = 'collect') & theme(legend.position = "null")
-ggsave(paste0(FigOut,"Proton_v2.pdf"), width = 8, height = 4, units = "in")
+ggsave(paste0(FigOut,"Fig5a_ProtonPCA_v2.pdf"), width = 8, height = 4, units = "in")
 ```
 
 ```{r Protein names from original FASTA file}
@@ -2251,7 +2250,7 @@ Dextran_DIA_LPS2$negLog_q <- -log10(Dextran_DIA_LPS2$FC_qval)
 Dextran_DIA_LPS2$negLog_q_bin <- ifelse(Dextran_DIA_LPS2$negLog_q >= 30, 30,Dextran_DIA_LPS2$negLog_q)
 
 Dextran_DIA_LPS2 %>% ggplot(aes(x = -median_prot_FC, y = negLog_q_bin, color = factor(Labs, levels = c("High uptake","Low uptake","Not significant")))) + geom_point(shape = 16,size = 5,alpha = 0.7) + theme_light() + labs(x = bquote("High / low uptake, log"[2]), y = bquote("-log"[10]~"(q val)"), color = "") + scale_color_manual(values = c("#009E73", "#CC79A7","#888888"))+ theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)), legend.text = element_text(size = 28), legend.title = element_blank(), legend.position="null",plot.margin = unit(c(1,0,0,0),"cm")) + geom_text_repel(aes(label = GeneLab2),size = 8, color = "black",min.segment.length = unit(0.33, "lines")) + coord_cartesian(xlim = c(-6.5,6.5), ylim = c(0,33))
-ggsave(paste0(FigOut,"LPS_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
+ggsave(paste0(FigOut,"Fig5b_LPS_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
 ```
 
 ```{r Fig5b (Top Panel) Dextran Uptake Sorting histogram}
@@ -2294,7 +2293,7 @@ ggplot(LPS_uptake1_obs.f, aes(x = (MFI), y = ..count../sum(..count..), fill = ..
   annotate("text",x = (LPS_quants[[3]] + 44000) , y = .085,size = 12 ,label = "High", color = "#02875E") +
   annotate("text",x = (LPS_quants[[3]] + 44000) , y = .072,size = 12 ,label = "Uptake", color = "#02875E") +
   annotate("text",x = (LPS_quants[[3]] + 44000) , y = .060,size = 8.5 ,label = "90th Percentile", color = "#02875E") +coord_cartesian(xlim = c(10^3,11^5))
-ggsave(paste0(FigOut,"LPS_DextranSort_wide_LPS_percent.pdf"), width = 8.15, height = 4.2, units = "in")
+ggsave(paste0(FigOut,"Fig5b_LPS_DextranSort_wide_LPS_percent.pdf"), width = 8.15, height = 4.2, units = "in")
 
 ```
 
@@ -2327,7 +2326,7 @@ LPS_Anti_scatter <- PCAout_LPS_coords.df_endo %>% ggplot(aes(x = PC1,y = PC2, co
 LPS_Pro_scatter <- PCAout_LPS_coords.df_endo %>% ggplot(aes(x = PC1,y = PC2, color = ProEndocytic)) + geom_point(shape = 16, size = 5, alpha = 0.75) + scale_color_gradient2(low = "blue",mid = "white", high = "red", midpoint = 0) + theme_light() + labs(x = "PC1", y = "PC2")  + theme(plot.title = element_text(size = 32, color = "#02875E"), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 32)) + ggtitle("High Uptake\nProteins")
 
 LPS_Anti_scatter + plot_spacer() + LPS_Pro_scatter + plot_layout(widths = c(5,0.75,5))
-ggsave(paste0(FigOut,"EndoPCA_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
+ggsave(paste0(FigOut,"Fig5b_EndoPCA_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
 ```
 
 #---------------
@@ -2430,7 +2429,7 @@ db_bind.m$nLogQVal_bin <- ifelse(db_bind.m$nLogQVal >= 3, 3,db_bind.m$nLogQVal)
 db_bind.m %>% ggplot(aes(x = factor(xLab,levels = c("Untreated","LPS-treated","M2","M1")), y = factor(EditedName,levels = rev(levelVec)), size = nLogQVal_bin, fill = value)) + geom_point(shape = 21, stroke = 1) + theme_light() + facet_wrap(~lab) + scale_fill_gradient2(low = "blue", mid = "white", high = "red",midpoint = 0,breaks=c(-.3,0,0.2)) + theme(axis.text.y = element_text(size = 18),axis.text.x = element_text(angle = 45, hjust = 1, size = 22), legend.title =element_text(size = 23.5), legend.text = element_text(size = 20,hjust =1),strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 24, color = "grey20", face = "bold"), axis.title.x = element_text(size = 34)) + labs(x = "Protein Sets",y="",fill = "Correlation",size = expression("-log"[10]~"(q val)")) + facet_wrap(~refName, scales = "free_x") +
   scale_size_continuous(breaks = seq(2,3,1),range=c(1,15),
                   limits = c(0, 3), labels = c("2",">3")) + scale_y_discrete(labels = c("Actin: L104, F1, cathepsin D" = "Fragment 1", "Citrate synthase: H25, F2, cathepsin E" =  "Fragment 2", "Actin: L299, F2, cathepsin D" = "Fragment 2", "Actin: L299, F1, cathepsin D" = "Fragment 1") )
-ggsave(paste0(FigOut,"Internal_and_SCoPE2_DB_MEROPS_v8.pdf"), width = 9, height = 5.25)
+ggsave(paste0(FigOut,"Fig6b_Internal_and_SCoPE2_DB_MEROPS_v8.pdf"), width = 9, height = 5.25)
 ```
 
 ```{r Fig 6a: Agreement between bulk and single-cell measurements}
@@ -2502,7 +2501,7 @@ Top2 <- Bulk_and_SC2 %>% filter(Desc3 %in% c("Actin: L104\ncathepsin D","Citrate
 
 BottomFacet <- Bulk_and_SC2 %>% filter(!(Desc3 %in% c("Actin: L104\ncathepsin D","Citrate synthase: H25\ncathepsin E"))) %>% ggplot(aes(y = 1,x = Lab, fill = (log2Ratio2))) + geom_tile() + scale_fill_gradient2(limits = c(-.5,.5),low = "blue", mid = "white", high = "red", midpoint = 0) + labs(y = "", x = "") + facet_wrap(~factor(Desc3, levels = FacetOrder), ncol = 1) + labs(fill = expression("Log"[2]~"(LPS:Untreated)")) + theme_light() + theme(axis.text = element_text(size = 16), axis.text.y = element_blank(), strip.background = element_rect(fill = "white", color = "grey70"), strip.text = element_text(size = 18, color = "grey20", face = "bold"), legend.position = "bottom", legend.text = element_text(size = 14, angle = 45, hjust = 1), legend.title = element_text(size = 16),plot.margin = unit(c(0.0,0,0.3,0),"cm"))
 Top2 / BottomFacet + plot_layout(guides = "collect",heights = c(3,1.5)) & theme(legend.position = "bottom",plot.margin =  margin(0, 0, 0, 0, "cm")) 
-ggsave(paste0(FigOut,"BulkAndSC_Val_v3_2part_v4.pdf"), width = 4, height = 5.25)
+ggsave(paste0(FigOut,"Fig6a_BulkAndSC_Val_v3_2part_v4.pdf"), width = 4, height = 5.25)
 ```
 
 ```{r fig6c: PCA color-coded by MEROPS peptide abundances}
@@ -2563,10 +2562,10 @@ ActL104_v2 <- PC_both_coords_Actin_L104_F1 %>% ggplot(aes(x = PC1, y = PC2, colo
   labs(color = "Abundance\nz-score", size = "")
 
 ((ActL299_F1_v2) + plot_spacer() + (ActL104_v2)) + plot_layout(widths = c(1,0.3,1), guides = "collect") & theme(legend.position = "null")
-ggsave(paste0(FigOut,"MEROPS_PCA_Fig2E_v2.pdf"), width = 10, height = 4.25, units = "in")
+ggsave(paste0(FigOut,"Fig6c_MEROPS_PCA_Fig2E_v2.pdf"), width = 10, height = 4.25, units = "in")
 
 ((ActL299_F1_v2) + plot_spacer() + (ActL104_v2)) + plot_layout(widths = c(1,0.5,1), guides = "collect") & theme(legend.position = "right")
-ggsave(paste0(FigOut,"MEROPS_PCA_Fig2E_v2_legend.pdf"), width = 10, height = 4.25, units = "in")
+ggsave(paste0(FigOut,"Fig6c_MEROPS_PCA_Fig2E_v2_legend.pdf"), width = 10, height = 4.25, units = "in")
 ```
 
 
@@ -2755,7 +2754,7 @@ ContrastMS2 <- CollectedContrast %>% filter(variable == "MS2Frac") %>% ggplot(ae
   scale_color_manual(values = c("black","red"))
 
 ContrastMS1 /plot_spacer()/ ContrastMS2 + plot_layout(heights = c(4,.5,4), guides = "collect") & theme(legend.position = 'bottom')
-ggsave(paste0(FigOut,"Rebuttal_contrast_MQliveStats.pdf"), width = 7, height = 8, units = "in")
+ggsave(paste0(FigOut,"EDF1_Rebuttal_contrast_MQliveStats.pdf"), width = 7, height = 8, units = "in")
 ```
 
 # EDF 2: CVs from SCP pipeline
@@ -2781,22 +2780,22 @@ library(ggpubr)
 ShotgunCVs_fig2 %>% ggplot(aes(x = cvm, fill = colorCode)) + geom_density(alpha=0.5, adjust=.8) + theme_light() + coord_cartesian(xlim = c(0,1))  + scale_x_continuous(limits = c(0,1)) +
   geom_vline(xintercept = .4, linetype = "dashed", size = 1, color = "grey50") + 
   scale_fill_manual(values=c("purple","grey10")) + theme_pubr() + labs(x = "Quantification Variability, CV", y = "Density") + theme(legend.title = element_blank(), axis.text = element_text(size = 14), axis.title = element_text(size = 16))
-ggsave(paste0(FigOut,"Fig2_ShotgunCVs.png"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"EDF2_Fig2_ShotgunCVs.png"), width = 7, height = 5, units = "in")
 
 pSCoPECVs_fig2a %>% ggplot(aes(x = cvm, fill = colorCode)) + geom_density(alpha=0.5, adjust=.7) + theme_light() + coord_cartesian(xlim = c(0,1))  + scale_x_continuous(limits = c(0,1)) +
   geom_vline(xintercept = .4, linetype = "dashed", size = 1, color = "grey50") +
   scale_fill_manual(values=c("purple","grey10")) + theme_pubr() + labs(x = "Quantification Variability, CV", y = "Density") + theme(legend.title = element_blank(), axis.text = element_text(size = 14), axis.title = element_text(size = 16))
-ggsave(paste0(FigOut,"Fig2s_pSCoPECVs.png"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"EDF2_Fig2s_pSCoPECVs.png"), width = 7, height = 5, units = "in")
 
 pSCoPECVs_fig2bcde %>% ggplot(aes(x = cvm, fill = colorCode)) + geom_density(alpha=0.5, adjust=.7) + theme_light() + coord_cartesian(xlim = c(0,1))  + scale_x_continuous(limits = c(0,1)) +
   geom_vline(xintercept = .4, linetype = "dashed", size = 1, color = "grey50") +
   scale_fill_manual(values=c("purple","grey10")) + theme_pubr() + labs(x = "Quantification Variability, CV", y = "Density") + theme(legend.title = element_blank(), axis.text = element_text(size = 14), axis.title = element_text(size = 16))
-ggsave(paste0(FigOut,"Fig2bcde_pSCoPECVs.png"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"EDF2_Fig2bcde_pSCoPECVs.png"), width = 7, height = 5, units = "in")
 
 pSCoPECVs_fig4_5_6 %>% ggplot(aes(x = cvm, fill = colorCode)) + geom_density(alpha=0.5, adjust=.7) + theme_light() + coord_cartesian(xlim = c(0,1))  + scale_x_continuous(limits = c(0,1)) +
   geom_vline(xintercept = .4, linetype = "dashed", size = 1, color = "grey50") +
   scale_fill_manual(values=c("purple","grey10")) + theme_pubr() + labs(x = "Quantification Variability, CV", y = "Density") + theme(legend.title = element_blank(), axis.text = element_text(size = 14), axis.title = element_text(size = 16))
-ggsave(paste0(FigOut,"Fig4_5_6_pSCoPECVs.png"), width = 7, height = 5, units = "in")
+ggsave(paste0(FigOut,"EDF2_Fig4_5_6_pSCoPECVs.png"), width = 7, height = 5, units = "in")
 ```
 
 # EDF 3: Properties of peptides not confidently identified
@@ -2937,7 +2936,7 @@ Coverage_shotgun_evi.f.t2_sum3 %>% ggplot(aes(binPEP, fill = IDd)) + geom_histog
   plot.title = element_text(size = 18)
 )
   #ggtitle("Shotgun PSM Properties:  PEP")
-ggsave(paste0(FigOut,"PSMs1pFDR_PEPHistogram_forPub_Rebut.pdf"), width = 8, height = 6, units = "in")
+ggsave(paste0(FigOut,"EDF3_PSMs1pFDR_PEPHistogram_forPub_Rebut.pdf"), width = 8, height = 6, units = "in")
 
 Coverage_shotgun_evi.f.t2_sum3 %>% ggplot(aes(medianFrag, fill = IDd)) + geom_histogram(position = position_identity(), alpha = 0.5) + theme_light()   + facet_wrap(~factor(Title, levels = c("High","Medium","Low","RT only")),nrow = 1, scales = "free_x") + geom_vline(aes(xintercept = medFrag, color = IDd)) + labs(x = "Number of Matching Fragments", y = "Prioritized Precursors", color = "", fill = "") + coord_flip()+ theme(axis.text.x = element_text(angle = 45, hjust = 1),
   axis.text = element_text(size = 20),
@@ -2949,7 +2948,7 @@ Coverage_shotgun_evi.f.t2_sum3 %>% ggplot(aes(medianFrag, fill = IDd)) + geom_hi
   plot.title = element_text(size = 18)
 )   
   #ggtitle("Shotgun PSM Properties: Matching Fragments") 
-ggsave(paste0(FigOut,"PSMs1pFDR_fragHistogram_forPub_Rebut.pdf"), width = 8, height = 6, units = "in")  
+ggsave(paste0(FigOut,"EDF3_PSMs1pFDR_fragHistogram_forPub_Rebut.pdf"), width = 8, height = 6, units = "in")  
   
 Coverage_shotgun_evi.f.t2_sum3 %>% filter(Priority %in% c(4,3)) %>% ggplot(aes(binPEP, color = IDd)) + geom_density(position = position_identity(), alpha = 0.5, lwd = 2) + theme_light()  + labs(x = bquote('-Log'[10]~ 'PEP'), y = "Prioritized Precursors, Density", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
   axis.text = element_text(size = 20),
@@ -2962,7 +2961,7 @@ Coverage_shotgun_evi.f.t2_sum3 %>% filter(Priority %in% c(4,3)) %>% ggplot(aes(b
 )  +
   #ggtitle("Shotgun PSM Properties:  PEP") + 
 facet_wrap(~"Top Two Priority Levels")
-ggsave(paste0(FigOut,"PSMs1pFDR_PEPDensity_forPub_Rebut.pdf"), width = 6, height = 6, units = "in")
+ggsave(paste0(FigOut,"EDF3_PSMs1pFDR_PEPDensity_forPub_Rebut.pdf"), width = 6, height = 6, units = "in")
 
 Coverage_shotgun_evi.f.t2_sum3 %>% filter(Priority %in% c(4,3)) %>% ggplot(aes(medianFrag, color = IDd)) + geom_density(position = position_identity(), alpha = 0.5, lwd = 2) + theme_light()  + labs(x = "Number of Matching Fragments", y = "Prioritized Precursors, Density", color = "", fill = "") + coord_flip() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
   axis.text = element_text(size = 20),
@@ -2975,122 +2974,10 @@ Coverage_shotgun_evi.f.t2_sum3 %>% filter(Priority %in% c(4,3)) %>% ggplot(aes(m
 ) +
   #ggtitle("Shotgun PSM Properties: Matching Fragments") + 
   facet_wrap(~"Top Two Priority Levels")
-ggsave(paste0(FigOut,"PSMs1pFDR_FragDensity_forPub_Rebut.pdf"), width = 6, height = 6, units = "in")
+ggsave(paste0(FigOut,"EDF3_PSMs1pFDR_FragDensity_forPub_Rebut.pdf"), width = 6, height = 6, units = "in")
 
 ```
-
-# EDF 4: IMBR
-```{r}
-IMBR <- read.delim(paste0(datIn,"EDF4_IMBR/IMBR_shotgunSC_evidence.txt"))
-ShotgunComp <- read.delim(paste0(datIn,"EDF4_IMBR/shotgunSC_noIMBR_evidence.txt"))
-CovExps <- read.delim(paste0(datIn,"EDF4_IMBR/pSCoPE_SC_contrast_Fig2a_dataset_evidence.txt"))
-
-CovExps <- Empirical_FDR_PEP(CovExps)
-CovExps$SeqCharge <- paste0(CovExps$Modified.sequence, CovExps$Charge)
-PrioriSet <- c("wGH0671","wGH0672","wGH0673","wGH0675","wGH0678","wGH0679","wGH0680","wGH0681")
-CovExps.f <-CovExps %>% filter(qVal <= .01, Raw.file %in% PrioriSet)
-  
-IMBR.match <- IMBR %>% filter(grepl("MATCH",Type)&!grepl("CON",Leading.razor.protein))
-IMBR.match_sum <- IMBR.match %>% group_by(Type,Raw.file) %>% summarize(eventCount = n(),Rev = sum(grepl("REV",Leading.razor.protein)),fracRev = Rev/eventCount, sumForward = eventCount - Rev)
-
-IMBR.match.sum.m <- melt(IMBR.match_sum)
-
-# What fraction of all MBR events are accompanied by an MSMS
-IMBR.match_sum.MSMS.MBR <- IMBR.match_sum %>% select(Raw.file,eventCount,Type)
-IMBR.match.dcast <- dcast(IMBR.match_sum.MSMS.MBR,Raw.file~Type, value.var = "eventCount")
-IMBR.match.dcast$MBRsum <- IMBR.match.dcast$`MULTI-MATCH` + IMBR.match.dcast$`MULTI-MATCH-MSMS`
-IMBR.match.dcast$fracIMBR <- IMBR.match.dcast$`MULTI-MATCH-MSMS`/IMBR.match.dcast$MBRsum
-
-IMBR.lim <- IMBR.match.dcast %>% select(Raw.file,fracIMBR)
-IMBR.match_sum.lim <- IMBR.match_sum %>% ungroup() %>% filter(Type == "MULTI-MATCH-MSMS") %>% select(Raw.file, fracRev)
-
-IMBR.lim <- IMBR.lim %>% left_join(IMBR.match_sum.lim, by = "Raw.file")
-IMBR.lim$fracForward <- 1-IMBR.lim$fracRev
-IMBR.lim <- IMBR.lim %>% select(Raw.file,fracIMBR,fracForward)
-IMBR.lim.m <- melt(IMBR.lim)
-IMBR.lim.m_sum <- IMBR.lim.m %>% group_by(variable) %>% summarize(medVal = 100*median(value, na.rm = TRUE), sdVal = 100*sd(value, na.rm = TRUE))
-IMBR.lim.m_sum$plotLabel <- ifelse(IMBR.lim.m_sum$variable == "fracIMBR","Matches with an associated MS2","iMBR forward matches")
-IMBR.lim.m_sum$facetLabel <- ifelse(IMBR.lim.m_sum$variable == "fracIMBR","MBR PSMs","iMBR PSMs")
-
-# Are these sequences typically identified when targeted in a pSCoPE run? How frequently?
-IMBR.match$SeqCharge <- paste0(IMBR.match$Modified.sequence, IMBR.match$Charge)
-targList_instance_Coverage <- read.delim(paste0(datIn,"Fig2/Fig2_a_Coverage/pSCoPE_FinalTarg_Coverage.txt"))
-tList_Cov <- targList_instance_Coverage %>% filter(TargBoolean == TRUE)
-
-tList_Cov_dict <- tList_Cov %>% select(SeqCharge, Priority)
-
-IMBR.match.targ <- IMBR.match %>% filter(SeqCharge %in% tList_Cov$SeqCharge)
-IMBR.match.files <- length(unique(IMBR.match.targ$Raw.file))
-
-#New data filtration
-IMBR.PreQFilt <- Empirical_FDR_PEP(IMBR)
-IMBR.qFilt <- IMBR.PreQFilt %>% filter(qVal <= .01) %>% select(-c(qVal, Score_naOmit,Ind,revCount,RevHits))
-IMBR.targListInter <- IMBR %>% filter((Type == "MULTI-MATCH-MSMS"),(!grepl("CON", Leading.razor.protein)),(!grepl("REV", Leading.razor.protein)))
-
-IMBR.targListInter$SeqCharge <- paste0(IMBR.targListInter$Modified.sequence,IMBR.targListInter$Charge)
-IMBR.qFilt$SeqCharge <- paste0(IMBR.qFilt$Modified.sequence,IMBR.qFilt$Charge)
-
-interSeqChargeList <- intersect(IMBR.targListInter$SeqCharge, tList_Cov_dict$SeqCharge)
-
-IMBR.qFilt.comb <- rbind(IMBR.qFilt, IMBR.targListInter)
-IMBR.qFilt.comb$SeqCharge <- paste0(IMBR.qFilt.comb$Modified.sequence,IMBR.qFilt.comb$Charge)
-IMBR.qFilt.comb.inter <- IMBR.qFilt.comb %>% filter(SeqCharge %in% interSeqChargeList) 
-#IMBR.match.targ_sum <- IMBR.match.targ %>% filter(Type != "MULTI-MATCH") %>% group_by(SeqCharge,Type) %>% summarize(numExps = length(unique(Raw.file)), fractionIDd = numExps/IMBR.match.files, Platform = "IMBR") 
-IMBR.match.targ_sum <- IMBR.qFilt.comb.inter %>% group_by(SeqCharge) %>% summarize(numExps = length(unique(Raw.file)), fractionIDd = numExps/IMBR.match.files, Platform = "IMBR", Type = "Mixed")
-
-CovExps.f2 <- CovExps.f %>% filter(SeqCharge %in% interSeqChargeList)
-CovExps.f2.files <- length(unique(CovExps.f2$Raw.file))
-CovExps.f2_sum <- CovExps.f2 %>% group_by(SeqCharge) %>% summarize(numExps = length(unique(Raw.file)), fractionIDd = numExps/CovExps.f2.files, Platform = "pSCoPE",Type = "MSMS") 
-
-IMBR_contrast <- rbind(IMBR.match.targ_sum, CovExps.f2_sum)
-
-IMBR_contrast <- IMBR_contrast %>% left_join(tList_Cov_dict, by = "SeqCharge")
-
-IMBR_contrast$LevelDesc <- ifelse(IMBR_contrast$Priority == 3, "High",ifelse(IMBR_contrast$Priority == 2, "Medium","Low"))
-
-IMBR_contrast.inter <- IMBR_contrast %>% filter(SeqCharge %in% intersect(IMBR.match.targ_sum$SeqCharge,CovExps.f2_sum$SeqCharge))
-
-IMBR_contrast.inter %>% filter(Type != "MULTI-MATCH") %>% ggplot(aes(fractionIDd*100, fill = Platform)) + geom_histogram(position = position_identity(), alpha = 0.5) + facet_wrap(~factor(LevelDesc, levels = c("High","Medium","Low"))) + coord_flip(xlim = c(0,100)) + labs(x = "Runs Identified In, %", y = "Precursors") + theme_light()
-
-IMBR_contrast.inter_sum <- IMBR_contrast.inter %>% group_by(Platform, Priority) %>% summarize(count = n())
-IMBR_contrast.inter <- IMBR_contrast.inter %>% left_join(IMBR_contrast.inter_sum, by = c("Platform","Priority"))
-
-IMBR_contrast_box <- IMBR_contrast.inter %>% filter(Type != "MULTI-MATCH") %>% ggplot(aes(x=fractionIDd*100, color = Platform,y = Platform)) + geom_boxplot(lwd = 1, outlier.shape = NA) + facet_wrap(~factor(LevelDesc, levels = c("High","Medium","Low"))) + geom_point(position=position_jitterdodge(), size = 1.5, shape = 21, fill = "grey95") + coord_flip(xlim = c(0,100)) + labs(x = "Runs Identified In, %", color = "") + theme_light() + theme(axis.title.x = element_blank(),axis.text.x = element_blank(), axis.title.y = element_text(size = 22), axis.text.y = element_text(size =20), legend.position = "bottom",   legend.text = element_text(size = 20),
-  strip.background = element_rect( fill = "grey95", color = "grey70"), 
-  strip.text = element_text(color= "black", size = 22,face = "bold")) + scale_color_manual(values = c("grey20","red")) + geom_text( x =6, y = 1.5,color = "grey10",aes(label = paste0((count))), size = 6)  + geom_text( x = 4, y = 1.5,color = "grey10",aes(label = paste0("\nPrecursors")), size = 5)
-
-IMBR.match.sum.m$TypeLab <- ifelse(IMBR.match.sum.m$Type == "MULTI-MATCH","MBR","MBR associated with MS2 scan")
-IMBR.match.sum.m$variable2 <- ifelse(IMBR.match.sum.m$variable == "eventCount","All matches", ifelse(IMBR.match.sum.m$variable == "sumForward","Forward matches","Unused"))
-
-MBR <- IMBR.match.sum.m %>% filter(TypeLab == "MBR",variable2 != "Unused") %>% ggplot(aes(y=value,x = variable2, color = variable2)) + geom_boxplot(lwd = 1) + coord_cartesian(ylim = c(0,3000)) + theme_light() + labs(y = "MBR Matches", x = "", color = "") + geom_point(position=position_jitterdodge(), size = 2, shape = 21, fill = "grey95") +
-  theme(axis.text.x = element_blank(), 
-        axis.title = element_text(size = 22), 
-        axis.text.y = element_text(size = 20), 
-        strip.background = element_rect( fill = "grey95", color = "grey70"), 
-        strip.text = element_text(color= "black", size = 18,face = "bold"),
-        legend.position = "bottom") + 
-  scale_color_manual(values = c("grey70","grey20")) + facet_wrap(~"All\nPrecursors")   + scale_y_continuous(limits = c(0, 3000), breaks = seq(0, 3000, by = 1500))
-#+ geom_errorbar(aes(ymin = (medVal - sdVal), ymax = (medVal + sdVal)), color = "grey40", width = 0.5)
-
-MBR2 <- IMBR.match.sum.m %>% filter(TypeLab != "MBR",variable2 != "Unused") %>% ggplot(aes(y=value, x = variable2, color = variable2)) + geom_boxplot(lwd = 1) + coord_cartesian(ylim = c(0,1000)) + theme_light() + labs(y = "", x = "", color = "") + geom_point(position=position_jitterdodge(), size = 2, shape = 21, fill = "grey95") +
-  theme(axis.text.x = element_blank(), 
-        axis.title = element_text(size = 22), 
-        axis.text.y = element_text(size = 20), 
-        strip.background = element_rect( fill = "grey95", color = "grey70"), 
-        strip.text = element_text(color= "black", size = 18,face = "bold"),
-        legend.position = "bottom")  + scale_color_manual(values = c("grey70","grey20")) + facet_wrap(~"Precursors with\nMS2 Scans")  + scale_y_continuous(limits = c(0, 1000), breaks = seq(0, 1000, by = 500))
-
-MBR + MBR2 + plot_layout(guides = "collect")  & theme(legend.position = 'bottom', legend.text = element_text(size = 14))
-ggsave(paste0(FigOut,"IMBR_contrast_Top.pdf"), width = 7, height = 5, units = "in")
-
-IMBR_contrast_box 
-ggsave(paste0(FigOut,"IMBR_contrast_bottom.pdf"), width = 7, height = 5, units = "in")
-
-
-IMBR.match.sum.m.sum <- IMBR.match.sum.m %>% group_by(variable,Type) %>% summarize(medVal = median(value, na.rm = TRUE))
-```
-
-# EDF 5: MQ.live log stats for Fig2 experiments
+# EDF 4: MQ.live log stats for Fig2 experiments
 ```{r}
 
 #-----
@@ -3259,8 +3146,122 @@ ConsistencyMQL.Log <- tList_sum_out.consist.j.f.m %>% ggplot(aes(Percent, color 
 
 
 CoverageMQL.Log /plot_spacer()/ ConsistencyMQL.Log + plot_layout(heights = c(4,.5,4), guides = "collect") & theme(legend.position = 'bottom')
-ggsave(paste0(FigOut,"Rebuttal_SC_MQliveStats.pdf"), width = 7, height = 8, units = "in")
+ggsave(paste0(FigOut,"EDF4_Rebuttal_SC_MQliveStats.pdf"), width = 7, height = 8, units = "in")
 ```
+
+
+
+# EDF 5: IMBR
+```{r}
+IMBR <- read.delim(paste0(datIn,"EDF4_IMBR/IMBR_shotgunSC_evidence.txt"))
+ShotgunComp <- read.delim(paste0(datIn,"EDF4_IMBR/shotgunSC_noIMBR_evidence.txt"))
+CovExps <- read.delim(paste0(datIn,"EDF4_IMBR/pSCoPE_SC_contrast_Fig2a_dataset_evidence.txt"))
+
+CovExps <- Empirical_FDR_PEP(CovExps)
+CovExps$SeqCharge <- paste0(CovExps$Modified.sequence, CovExps$Charge)
+PrioriSet <- c("wGH0671","wGH0672","wGH0673","wGH0675","wGH0678","wGH0679","wGH0680","wGH0681")
+CovExps.f <-CovExps %>% filter(qVal <= .01, Raw.file %in% PrioriSet)
+  
+IMBR.match <- IMBR %>% filter(grepl("MATCH",Type)&!grepl("CON",Leading.razor.protein))
+IMBR.match_sum <- IMBR.match %>% group_by(Type,Raw.file) %>% summarize(eventCount = n(),Rev = sum(grepl("REV",Leading.razor.protein)),fracRev = Rev/eventCount, sumForward = eventCount - Rev)
+
+IMBR.match.sum.m <- melt(IMBR.match_sum)
+
+# What fraction of all MBR events are accompanied by an MSMS
+IMBR.match_sum.MSMS.MBR <- IMBR.match_sum %>% select(Raw.file,eventCount,Type)
+IMBR.match.dcast <- dcast(IMBR.match_sum.MSMS.MBR,Raw.file~Type, value.var = "eventCount")
+IMBR.match.dcast$MBRsum <- IMBR.match.dcast$`MULTI-MATCH` + IMBR.match.dcast$`MULTI-MATCH-MSMS`
+IMBR.match.dcast$fracIMBR <- IMBR.match.dcast$`MULTI-MATCH-MSMS`/IMBR.match.dcast$MBRsum
+
+IMBR.lim <- IMBR.match.dcast %>% select(Raw.file,fracIMBR)
+IMBR.match_sum.lim <- IMBR.match_sum %>% ungroup() %>% filter(Type == "MULTI-MATCH-MSMS") %>% select(Raw.file, fracRev)
+
+IMBR.lim <- IMBR.lim %>% left_join(IMBR.match_sum.lim, by = "Raw.file")
+IMBR.lim$fracForward <- 1-IMBR.lim$fracRev
+IMBR.lim <- IMBR.lim %>% select(Raw.file,fracIMBR,fracForward)
+IMBR.lim.m <- melt(IMBR.lim)
+IMBR.lim.m_sum <- IMBR.lim.m %>% group_by(variable) %>% summarize(medVal = 100*median(value, na.rm = TRUE), sdVal = 100*sd(value, na.rm = TRUE))
+IMBR.lim.m_sum$plotLabel <- ifelse(IMBR.lim.m_sum$variable == "fracIMBR","Matches with an associated MS2","iMBR forward matches")
+IMBR.lim.m_sum$facetLabel <- ifelse(IMBR.lim.m_sum$variable == "fracIMBR","MBR PSMs","iMBR PSMs")
+
+# Are these sequences typically identified when targeted in a pSCoPE run? How frequently?
+IMBR.match$SeqCharge <- paste0(IMBR.match$Modified.sequence, IMBR.match$Charge)
+targList_instance_Coverage <- read.delim(paste0(datIn,"Fig2/Fig2_a_Coverage/pSCoPE_FinalTarg_Coverage.txt"))
+tList_Cov <- targList_instance_Coverage %>% filter(TargBoolean == TRUE)
+
+tList_Cov_dict <- tList_Cov %>% select(SeqCharge, Priority)
+
+IMBR.match.targ <- IMBR.match %>% filter(SeqCharge %in% tList_Cov$SeqCharge)
+IMBR.match.files <- length(unique(IMBR.match.targ$Raw.file))
+
+#New data filtration
+IMBR.PreQFilt <- Empirical_FDR_PEP(IMBR)
+IMBR.qFilt <- IMBR.PreQFilt %>% filter(qVal <= .01) %>% select(-c(qVal, Score_naOmit,Ind,revCount,RevHits))
+IMBR.targListInter <- IMBR %>% filter((Type == "MULTI-MATCH-MSMS"),(!grepl("CON", Leading.razor.protein)),(!grepl("REV", Leading.razor.protein)))
+
+IMBR.targListInter$SeqCharge <- paste0(IMBR.targListInter$Modified.sequence,IMBR.targListInter$Charge)
+IMBR.qFilt$SeqCharge <- paste0(IMBR.qFilt$Modified.sequence,IMBR.qFilt$Charge)
+
+interSeqChargeList <- intersect(IMBR.targListInter$SeqCharge, tList_Cov_dict$SeqCharge)
+
+IMBR.qFilt.comb <- rbind(IMBR.qFilt, IMBR.targListInter)
+IMBR.qFilt.comb$SeqCharge <- paste0(IMBR.qFilt.comb$Modified.sequence,IMBR.qFilt.comb$Charge)
+IMBR.qFilt.comb.inter <- IMBR.qFilt.comb %>% filter(SeqCharge %in% interSeqChargeList) 
+#IMBR.match.targ_sum <- IMBR.match.targ %>% filter(Type != "MULTI-MATCH") %>% group_by(SeqCharge,Type) %>% summarize(numExps = length(unique(Raw.file)), fractionIDd = numExps/IMBR.match.files, Platform = "IMBR") 
+IMBR.match.targ_sum <- IMBR.qFilt.comb.inter %>% group_by(SeqCharge) %>% summarize(numExps = length(unique(Raw.file)), fractionIDd = numExps/IMBR.match.files, Platform = "IMBR", Type = "Mixed")
+
+CovExps.f2 <- CovExps.f %>% filter(SeqCharge %in% interSeqChargeList)
+CovExps.f2.files <- length(unique(CovExps.f2$Raw.file))
+CovExps.f2_sum <- CovExps.f2 %>% group_by(SeqCharge) %>% summarize(numExps = length(unique(Raw.file)), fractionIDd = numExps/CovExps.f2.files, Platform = "pSCoPE",Type = "MSMS") 
+
+IMBR_contrast <- rbind(IMBR.match.targ_sum, CovExps.f2_sum)
+
+IMBR_contrast <- IMBR_contrast %>% left_join(tList_Cov_dict, by = "SeqCharge")
+
+IMBR_contrast$LevelDesc <- ifelse(IMBR_contrast$Priority == 3, "High",ifelse(IMBR_contrast$Priority == 2, "Medium","Low"))
+
+IMBR_contrast.inter <- IMBR_contrast %>% filter(SeqCharge %in% intersect(IMBR.match.targ_sum$SeqCharge,CovExps.f2_sum$SeqCharge))
+
+IMBR_contrast.inter %>% filter(Type != "MULTI-MATCH") %>% ggplot(aes(fractionIDd*100, fill = Platform)) + geom_histogram(position = position_identity(), alpha = 0.5) + facet_wrap(~factor(LevelDesc, levels = c("High","Medium","Low"))) + coord_flip(xlim = c(0,100)) + labs(x = "Runs Identified In, %", y = "Precursors") + theme_light()
+
+IMBR_contrast.inter_sum <- IMBR_contrast.inter %>% group_by(Platform, Priority) %>% summarize(count = n())
+IMBR_contrast.inter <- IMBR_contrast.inter %>% left_join(IMBR_contrast.inter_sum, by = c("Platform","Priority"))
+
+IMBR_contrast_box <- IMBR_contrast.inter %>% filter(Type != "MULTI-MATCH") %>% ggplot(aes(x=fractionIDd*100, color = Platform,y = Platform)) + geom_boxplot(lwd = 1, outlier.shape = NA) + facet_wrap(~factor(LevelDesc, levels = c("High","Medium","Low"))) + geom_point(position=position_jitterdodge(), size = 1.5, shape = 21, fill = "grey95") + coord_flip(xlim = c(0,100)) + labs(x = "Runs Identified In, %", color = "") + theme_light() + theme(axis.title.x = element_blank(),axis.text.x = element_blank(), axis.title.y = element_text(size = 22), axis.text.y = element_text(size =20), legend.position = "bottom",   legend.text = element_text(size = 20),
+  strip.background = element_rect( fill = "grey95", color = "grey70"), 
+  strip.text = element_text(color= "black", size = 22,face = "bold")) + scale_color_manual(values = c("grey20","red")) + geom_text( x =6, y = 1.5,color = "grey10",aes(label = paste0((count))), size = 6)  + geom_text( x = 4, y = 1.5,color = "grey10",aes(label = paste0("\nPrecursors")), size = 5)
+
+IMBR.match.sum.m$TypeLab <- ifelse(IMBR.match.sum.m$Type == "MULTI-MATCH","MBR","MBR associated with MS2 scan")
+IMBR.match.sum.m$variable2 <- ifelse(IMBR.match.sum.m$variable == "eventCount","All matches", ifelse(IMBR.match.sum.m$variable == "sumForward","Forward matches","Unused"))
+
+MBR <- IMBR.match.sum.m %>% filter(TypeLab == "MBR",variable2 != "Unused") %>% ggplot(aes(y=value,x = variable2, color = variable2)) + geom_boxplot(lwd = 1) + coord_cartesian(ylim = c(0,3000)) + theme_light() + labs(y = "MBR Matches", x = "", color = "") + geom_point(position=position_jitterdodge(), size = 2, shape = 21, fill = "grey95") +
+  theme(axis.text.x = element_blank(), 
+        axis.title = element_text(size = 22), 
+        axis.text.y = element_text(size = 20), 
+        strip.background = element_rect( fill = "grey95", color = "grey70"), 
+        strip.text = element_text(color= "black", size = 18,face = "bold"),
+        legend.position = "bottom") + 
+  scale_color_manual(values = c("grey70","grey20")) + facet_wrap(~"All\nPrecursors")   + scale_y_continuous(limits = c(0, 3000), breaks = seq(0, 3000, by = 1500))
+#+ geom_errorbar(aes(ymin = (medVal - sdVal), ymax = (medVal + sdVal)), color = "grey40", width = 0.5)
+
+MBR2 <- IMBR.match.sum.m %>% filter(TypeLab != "MBR",variable2 != "Unused") %>% ggplot(aes(y=value, x = variable2, color = variable2)) + geom_boxplot(lwd = 1) + coord_cartesian(ylim = c(0,1000)) + theme_light() + labs(y = "", x = "", color = "") + geom_point(position=position_jitterdodge(), size = 2, shape = 21, fill = "grey95") +
+  theme(axis.text.x = element_blank(), 
+        axis.title = element_text(size = 22), 
+        axis.text.y = element_text(size = 20), 
+        strip.background = element_rect( fill = "grey95", color = "grey70"), 
+        strip.text = element_text(color= "black", size = 18,face = "bold"),
+        legend.position = "bottom")  + scale_color_manual(values = c("grey70","grey20")) + facet_wrap(~"Precursors with\nMS2 Scans")  + scale_y_continuous(limits = c(0, 1000), breaks = seq(0, 1000, by = 500))
+
+MBR + MBR2 + plot_layout(guides = "collect")  & theme(legend.position = 'bottom', legend.text = element_text(size = 14))
+ggsave(paste0(FigOut,"EDF5_IMBR_contrast_Top.pdf"), width = 7, height = 5, units = "in")
+
+IMBR_contrast_box 
+ggsave(paste0(FigOut,"EDF5_IMBR_contrast_bottom.pdf"), width = 7, height = 5, units = "in")
+
+
+IMBR.match.sum.m.sum <- IMBR.match.sum.m %>% group_by(variable,Type) %>% summarize(medVal = median(value, na.rm = TRUE))
+```
+
 
 # EDF 6: pSCoPE benchmarking against shotgun (BMDM data)
 ```{r}
@@ -3402,7 +3403,7 @@ fig1Supp_protMD <- BMDM_prot_sum %>% group_by(Method,FacetLab) %>% summarize(med
 #%%%%%%%%%%%%%
 
 peptide_MD + protMD + plot_annotation(title = 'BMDMs: Missing Data per Cell',theme = theme(plot.title = element_text(size = 28))) + plot_layout(guides = "collect",widths = c(1,1)) & theme(legend.position = 'null')
-ggsave(paste0(FigOut,"BMDM_missingData_v2_mrri02.pdf"), width = 9 , height = 7, units = "in")
+ggsave(paste0(FigOut,"EDF6a_BMDM_missingData_v2_mrri02.pdf"), width = 9 , height = 7, units = "in")
 
 #----------------
 
@@ -3437,7 +3438,7 @@ fig1Supp2_pepCov <- BMDM_pep.join_sum %>% group_by(Method) %>% summarize(medVal 
 #%%%%%%%%%%%%%
 
 pepsPerCell + protsPerCell + plot_annotation(title = 'BMDMs: Data Points per Cell',theme = theme(plot.title = element_text(size = 28))) + plot_layout(guides = "collect",widths = c(1,1)) & theme(legend.position = 'null')  
-ggsave(paste0(FigOut,"BMDM_DataPointsPerCell_mrri02.pdf"), width = 7, height = 7, units = "in")
+ggsave(paste0(FigOut,"EDF6b_BMDM_DataPointsPerCell_mrri02.pdf"), width = 7, height = 7, units = "in")
 
 #-----------------
 
@@ -3488,7 +3489,7 @@ library(patchwork)
 #%%%%%%%%%
 
 intHist + MDhist + plot_annotation(title = 'Intensity-dependent MS2 Fill Times',theme = theme(plot.title = element_text(size = 28)))
-ggsave(paste0(FigOut,"BMDM_IncreasedFillTimes_mrri02.pdf"), width = 7, height = 7, units = "in")
+ggsave(paste0(FigOut,"EDF6c_BMDM_IncreasedFillTimes_mrri02.pdf"), width = 7, height = 7, units = "in")
 
 ```
 
@@ -3569,14 +3570,14 @@ PhagosomeMat <- PC_coords_PSabund %>% ggplot(aes(x = -PC1, y = -PC2, color = `ph
 #%%%%%%%%%%
 
 celltype_unImp 
-ggsave(paste0(FigOut,"unimp_PCA_celltype_header.pdf"), width = 5.5, height = 5.5, units = "in")
+ggsave(paste0(FigOut,"EDF7_unimp_PCA_celltype_header.pdf"), width = 5.5, height = 5.5, units = "in")
   
 #%%%%%%%%%%
 #EDF7 (right panel)
 #%%%%%%%%%%
 
 (typeIIFN + PhagosomeMat) + plot_layout(guides = "collect", widths = c(1,1)) & theme(legend.position = "bottom", legend.text = element_text(size = 14),legend.title = element_text(size = 12)) 
-ggsave(paste0(FigOut,"unimp_PCA_PSEA_footer_select.pdf"), width = 5.5, height = 3.75, units = "in")
+ggsave(paste0(FigOut,"EDF7_unimp_PCA_PSEA_footer_select.pdf"), width = 5.5, height = 3.75, units = "in")
 ```
 
 # EDF 8: PCA of pSCoPE BMDM data color-coded by missingness
@@ -3622,7 +3623,7 @@ MD_pca$Completeness <- (1-MD_pca$fracMD)*100
 medMD <- mean(MD_pca$Completeness)
 MD_pca_plot <- MD_pca %>% ggplot(aes(x = PC1, y = PC2, color = Completeness)) + geom_point( size = 5, alpha = 0.7,shape = 16) + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 40, breaks = c(20,40,60)) + theme_light() + labs(color = "Protein-level\ndata completeness, %")  + theme(legend.position = "bottom")  + theme(legend.position = "bottom",legend.title = element_text(size = 14),legend.text = element_text(size = 14), axis.text = element_text(size = 18),axis.title = element_text(size = 24)) + labs(x = "PC1", y = "PC2")
 MD_pca_plot
-ggsave(paste0(FigOut,"DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
+ggsave(paste0(FigOut,"EDF8_DataCompleteness_PCA_supplemental.pdf"), width = 7, height = 7, units = "in")
 ```
 
 # EDF 9: Sorter info
@@ -3710,7 +3711,7 @@ Dextran_DIA_NT2$GeneLab3 <- ifelse(Dextran_DIA_NT2$Gene.names...primary.. %in% c
 Dextran_DIA_NT2$negLog_q <- -log10(Dextran_DIA_NT2$FC_qval)
 Dextran_DIA_NT2$negLog_q_bin <- ifelse(Dextran_DIA_NT2$negLog_q >= 30, 30,Dextran_DIA_NT2$negLog_q)
 Dextran_DIA_NT2 %>% ggplot(aes(x = -median_prot_FC, y = negLog_q_bin, color = factor(Labs, levels = c("High uptake","Low uptake","Not significant")))) + geom_point(shape = 16,size = 5,alpha = 0.7) + theme_light() + labs(x = bquote("High / low uptake, log"[2]), y = bquote("-log"[10]~"(q val)"), color = "") + scale_color_manual(values = c("#009E73", "#CC79A7","#888888"))+ theme(axis.text = element_text(size = 24), axis.title = element_text(size = 32), axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)), legend.text = element_text(size = 28), legend.title = element_blank(), legend.position="null",plot.margin = unit(c(1,0,0,0),"cm")) + geom_text_repel(aes(label = GeneLab2),size = 8, color = "black",min.segment.length = unit(0.33, "lines")) + coord_cartesian(xlim = c(-6.5,6.5), ylim = c(0,33))
-ggsave(paste0(FigOut,"NT_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
+ggsave(paste0(FigOut,"EDF10_NT_DexVolcano_wide_v5_SelectLabs2.pdf"), width =8, height = 4, units = "in")
 
 
 
@@ -3757,7 +3758,7 @@ NT_Anti_scatter <- PCAout_NT_coords.df_endo %>% ggplot(aes(x = PC1,y = PC4, colo
 NT_Pro_scatter <- PCAout_NT_coords.df_endo %>% ggplot(aes(x = PC1,y = PC4, color = ProEndocytic)) + geom_point(shape = 16, size = 5, alpha = 0.75) + scale_color_gradient2(low = "blue",mid = "white", high = "red", midpoint = 0) + theme_light() + labs(x = "PC1", y = "PC4")  + theme(plot.title = element_text(size = 32, color = "#02875E"), legend.position = "null", axis.text = element_blank(), axis.title = element_text(size = 32)) + ggtitle("High Uptake\nProteins")
 
 NT_Anti_scatter + plot_spacer() + NT_Pro_scatter + plot_layout(widths = c(5,0.75,5))
-ggsave(paste0(FigOut,"EndoPCA_NT_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
+ggsave(paste0(FigOut,"EDF10_EndoPCA_NT_v3_forSCoPE_BluetoRed_wide_colorCoded.pdf"), width = 9, height = 5, units = "in")
 
 ```
 
@@ -3845,7 +3846,7 @@ ContingencyOut %>% filter(Platform != "Shotgun") %>% ggplot(aes(x = as.numeric(S
         legend.text = element_text(size = 12)) + 
   scale_color_manual(values = c("red","blue")) + 
   labs(x =bquote('Log'[10]~ 'Precursor Intensity'), y = "Precursors", color = "")
-ggsave(paste0(FigOut,"PrecursorIntHistogram.pdf"), height = 7, width = 7, units = "in")
+ggsave(paste0(FigOut,"FigS1_PrecursorIntHistogram.pdf"), height = 7, width = 7, units = "in")
 
 #Wide version
 ContingencyOut %>% filter(Platform != "Shotgun") %>% ggplot(aes(x = as.numeric(Start), y = meanFreq, color = Platform, group = Platform)) +
@@ -3865,6 +3866,6 @@ ContingencyOut %>% filter(Platform != "Shotgun") %>% ggplot(aes(x = as.numeric(S
   scale_color_manual(values = c("red","blue")) + 
   labs(x =bquote('Log'[10]~ 'Precursor Intensity'), y = "Precursors", color = "") +
   coord_flip()
-ggsave(paste0(FigOut,"PrecursorIntHistogram_side.pdf"), height = 6, width = 8, units = "in")
+ggsave(paste0(FigOut,"FigS1_PrecursorIntHistogram_side.pdf"), height = 6, width = 8, units = "in")
 
 ```
