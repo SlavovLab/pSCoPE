@@ -1,9 +1,9 @@
 # **pSCoPE**
 
-Prioritized Single-Cell ProtEomics by Mass Spectrometry
+## Prioritized Single-Cell ProtEomics by Mass Spectrometry
 
 <!--![GitHub release](https://img.shields.io/github/release/SlavovLab/DO-MS.svg)-->
-![GitHub](https://img.shields.io/github/license/SlavovLab/DO-MS.svg)
+![GitHub](https://img.shields.io/github/license/SlavovLab/DO-MS.svg)  |  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7498171.svg)](https://doi.org/10.5281/zenodo.7498171)
 
 * [Website](https://scp.slavovlab.net/pSCoPE)
 * [Running](#running)
