@@ -11,11 +11,14 @@
 * [Preprint](https://www.biorxiv.org/content/10.1101/2022.03.16.484655v1)
 
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7498171.svg)](https://doi.org/10.5281/zenodo.7498171)
+
+
 
 ![workflow](Workflow_v7.png)
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7498171.svg)](https://doi.org/10.5281/zenodo.7498171)
+
 
 
 ### Requirements
@@ -49,7 +52,7 @@ FASTA files containing MEROPS-annotated proteolytic cleavage products can be gen
 
 ------------
 
-The manuscript is freely available on bioRxiv: <!-- [Specht et al., 2019](https://www.biorxiv.org/content/10.1101/665307v3) -->
+The manuscript is freely available on *bioRxiv*: [Huffman et al., 2022](https://www.biorxiv.org/content/10.1101/2022.03.16.484655v2)
 
 Contact the authors by email: [nslavov\{at\}northeastern.edu](mailto:nslavov@northeastern.edu).
 
