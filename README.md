@@ -5,10 +5,11 @@
 <!--![GitHub release](https://img.shields.io/github/release/SlavovLab/DO-MS.svg)-->
 ![GitHub](https://img.shields.io/github/license/SlavovLab/DO-MS.svg)
 
-* [pSCiPE Website](https://scp.slavovlab.net/pSCoPE)
+* [pSCoPE Website](https://scp.slavovlab.net/pSCoPE)
 * [Running](#running)
 * [Download data](https://scp.slavovlab.net/Huffman_et_al_2022)
-* [Preprint](https://www.biorxiv.org/content/10.1101/2022.03.16.484655v1)
+* [Preprint](https://www.biorxiv.org/content/10.1101/2022.03.16.484655v2)
+* [*Nature Methods* Article](https://www.nature.com/articles/s41592-023-01830-1)
 
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7498171.svg)](https://doi.org/10.5281/zenodo.7498171)
